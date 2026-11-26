@@ -3,7 +3,7 @@ name: Mirror Winlator Mali
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 5 * * *"
+    - cron: "13 5 * * *"
 
 permissions:
   contents: write
@@ -11,18 +11,23 @@ permissions:
 jobs:
   mirror:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - name: Mirror upstream branches and tags
+      - name: Mirror upstream branches and tags into a separate namespace
         shell: bash
         run: |
           set -euo pipefail
+          UPSTREAM="https://github.com/GunaCharanTeja/WinlatorMali.git"
+          TARGET="https://x-access-token:${GITHUB_TOKEN}@github.com/${TARGET_REPO}.git"
           echo "Cloning upstream Winlator Mali..."
-          git clone --bare https://github.com/GunaCharanTeja/WinlatorMali.git source.git
+          git clone --bare "$UPSTREAM" source.git
           cd source.git
-          echo "Pushing branches..."
-          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${TARGET_REPO}.git" 'refs/heads/*:refs/heads/*'
-          echo "Pushing tags..."
-          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${TARGET_REPO}.git" 'refs/tags/*:refs/tags/*'
+          echo "Mirroring branches to upstream-mali/*..."
+          git push --prune "$TARGET" 'refs/heads/*:refs/heads/upstream-mali/*'
+          echo "Mirroring tags to upstream-mali/*..."
+          git push --prune "$TARGET" 'refs/tags/*:refs/tags/upstream-mali/*'
+          echo "Checking mirrored refs..."
+          git ls-remote "$TARGET" 'refs/heads/upstream-mali/*' 'refs/tags/upstream-mali/*'
           echo "Mirror completed."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
