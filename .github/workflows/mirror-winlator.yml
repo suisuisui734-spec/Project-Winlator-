@@ -16,10 +16,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          echo "Cloning upstream Winlator Mali..."
           git clone --bare https://github.com/GunaCharanTeja/WinlatorMali.git source.git
           cd source.git
-          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${TARGET_REPO}.git" --all
-          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${TARGET_REPO}.git" --tags
+          echo "Pushing branches..."
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${TARGET_REPO}.git" 'refs/heads/*:refs/heads/*'
+          echo "Pushing tags..."
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${TARGET_REPO}.git" 'refs/tags/*:refs/tags/*'
+          echo "Mirror completed."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TARGET_REPO: suisuisui734-spec/Project-Winlator-
