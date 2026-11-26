@@ -71,6 +71,7 @@ import com.winlator.cmod.contentdialog.WineD3DConfigDialog;
 import com.winlator.cmod.contents.ContentProfile;
 import com.winlator.cmod.contents.ContentsManager;
 import com.winlator.cmod.contents.AdrenotoolsManager;
+import com.winlator.cmod.core.AppExecutors;
 import com.winlator.cmod.core.AppUtils;
 import com.winlator.cmod.core.DefaultVersion;
 import com.winlator.cmod.core.EnvVars;
@@ -146,7 +147,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -744,7 +744,7 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
                 // No profile defined, run the simulated dialog confirmation for input controls
                 simulateConfirmInputControlsDialog();
             }
-            Executors.newSingleThreadExecutor().execute(() -> {
+            AppExecutors.executeBackground(() -> {
                 setupWineSystemFiles();
                 extractGraphicsDriverFiles();
                 changeWineAudioDriver();
@@ -953,7 +953,7 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
     private void exit() {
         preloaderDialog.showOnUiThread(R.string.shutdown);
         com.winlator.cmod.perf.PerformanceManager.onGameStop(this);
-        Executors.newSingleThreadExecutor().execute(() -> {
+        AppExecutors.executeBackground(() -> {
             savePlaytimeData();
             handler.removeCallbacks(savePlaytimeRunnable);
             if (midiHandler != null) midiHandler.stop();

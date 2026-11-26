@@ -213,12 +213,7 @@ public class PerformanceManager {
         }
 
         boolean wasThrottled = thermalThrottled;
-        // Hysteresis: pause at MODERATE or above; resume only at LIGHT or NONE.
-        if (status >= PowerManager.THERMAL_STATUS_MODERATE) {
-            thermalThrottled = true;
-        } else if (status <= PowerManager.THERMAL_STATUS_LIGHT) {
-            thermalThrottled = false;
-        }
+        thermalThrottled = ThermalGuardState.update(thermalThrottled, status);
 
         if (wasThrottled != thermalThrottled) {
             Log.i(TAG, "Thermal guard changed: status=" + status

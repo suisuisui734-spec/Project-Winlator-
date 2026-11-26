@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feature/helio-g100-mali-optimization
+      - feature/helio-g100-performance-phase2
   pull_request:
     branches:
       - main
@@ -90,10 +91,26 @@ jobs:
             ./gradlew ":app:assemble${CAP_FLAVOR}${CAP_TYPE}" --no-daemon --stacktrace
           fi
 
-      - name: Upload APK artifacts
+      - name: Inspect APK package metadata and native ABI payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="$(find app/build/outputs/apk -type f -name '*.apk' -print -quit)"
+          test -n "$APK"
+          mkdir -p phase2-artifacts
+          AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
+          "$AAPT" dump badging "$APK" > phase2-artifacts/aapt-badging.txt
+          python3 scripts/inspect-apk.py "$APK" \
+            --badging phase2-artifacts/aapt-badging.txt \
+            --output phase2-artifacts/apk-inspection.json
+          cat phase2-artifacts/apk-inspection.json
+
+      - name: Upload APK and inspection report
         uses: actions/upload-artifact@v4
         with:
-          name: project-winlator-${{ env.FLAVOR }}-${{ env.BUILD_TYPE }}
-          path: app/build/outputs/apk/**/*.apk
+          name: project-winlator-${{ env.FLAVOR }}-${{ env.BUILD_TYPE }}-phase2
+          path: |
+            app/build/outputs/apk/**/*.apk
+            phase2-artifacts/*
           if-no-files-found: error
           retention-days: 14

@@ -71,15 +71,19 @@ public class CpuTopology {
         return sb.toString();
     }
 
-    public static int getBigCoreMask() {
-        List<Integer> bigCores = detectBigCoreIndices();
+    static int buildCpuMask(List<Integer> coreIndices) {
+        if (coreIndices == null || coreIndices.isEmpty()) return 0;
         int mask = 0;
-        for (int core : bigCores) {
-            if (core >= 0 && core < Integer.SIZE) {
+        for (Integer core : coreIndices) {
+            if (core != null && core >= 0 && core < Integer.SIZE) {
                 mask |= (1 << core);
             }
         }
         return mask;
+    }
+
+    public static int getBigCoreMask() {
+        return buildCpuMask(detectBigCoreIndices());
     }
 
     public static int applyBigCoreAffinity(int guestRootPid) {
