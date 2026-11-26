@@ -4,7 +4,7 @@
 
 - Original main: 79d178f94b71addbdb3ce43dfaa1c78ca22f595f
 - Phase 1 source base: acd97ce71b17dd7c8b646c66db4e8bf163e3d02a
-- Latest verified Phase 2 source: 96401a1f4c9d44b780b060a501f953114167f14d
+- Latest verified Phase 2 source: ddd75ccb66c3682e28d3aeed0e9a3f134325930d
 - Target: MediaTek Helio G100 / Mali / Android / ARM64
 - Physical target device: NOT AVAILABLE during this execution.
 
@@ -43,7 +43,7 @@ Static source findings and a successful build do not establish a real-world FPS 
 
 ## Memory and package findings
 
-Latest successful APK inspection from run 45905407533:
+Latest successful APK inspection from run 45905943515:
 
 - APK path: app/build/outputs/apk/standard/debug/app-standard-debug.apk
 - APK size: 447,763,096 bytes (about 427 MiB)
@@ -51,7 +51,7 @@ Latest successful APK inspection from run 45905407533:
 - Version: 1.2.1 Bionic, versionCode 23
 - ZIP entries: 1,291
 - Native ABI: arm64-v8a only
-- Native libraries: 22, total 11,663,720 bytes uncompressed
+- Native libraries: 22, total 11,663,800 bytes uncompressed
 - Asset entries: 110
 - Asset bytes: 433,937,395 uncompressed; 432,187,879 compressed in APK
 
@@ -61,8 +61,8 @@ The package size is dominated by runtime assets rather than native ARM64 librari
 
 ## Verified build
 
-- Workflow: 45905407533
-- Source commit: 96401a1f4c9d44b780b060a501f953114167f14d
+- Workflow: 45905943515
+- Source commit: ddd75ccb66c3682e28d3aeed0e9a3f134325930d
 - Overall: SUCCESS
 - Source validation: PASS
 - Unit-test task: PASS
@@ -71,10 +71,10 @@ The package size is dominated by runtime assets rather than native ARM64 librari
 - Native ARM64 compilation: PASS
 - APK metadata/ABI inspection: PASS
 - Artifact upload: PASS
-- Artifact: project-winlator-standard-debug-phase2, ID 15158325113
-- Artifact ZIP size: 446,628,332 bytes
+- Artifact: project-winlator-standard-debug-phase2, ID 15157618638
+- Artifact ZIP size: 446,628,327 bytes
 - Expiry: 2026-12-10 UTC
-- Run page: https://github.com/suisuisui-spec/Project-Winlator-/actions/runs/45905407533
+- Run page: https://github.com/suisuisui-spec/Project-Winlator-/actions/runs/45905943515
 
 The native compiler no longer reports the sometimes-uninitialized Vulkan pointer warnings after the latest fix. Other upstream warnings remain, including unused JNI parameters and signed/unsigned comparisons.
 

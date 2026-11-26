@@ -6,7 +6,7 @@
 - Original main baseline: 79d178f94b71addbdb3ce43dfaa1c78ca22f595f
 - Phase 1 source base: acd97ce71b17dd7c8b646c66db4e8bf163e3d02a
 - Phase 2 branch: feature/helio-g100-performance-phase2
-- Verified Phase 2 source commit: 96401a1f4c9d44b780b060a501f953114167f14d
+- Verified Phase 2 source commit: ddd75ccb66c3682e28d3aeed0e9a3f134325930d
 - main remains unchanged.
 
 ## Performance findings
@@ -62,7 +62,7 @@ Existing Box64/FEX presets, per-container/per-game settings, Wrapper/graphics se
 
 ## Build
 
-- GitHub Actions run: 45905407533
+- GitHub Actions run: 45905943515
 - Overall result: SUCCESS
 - Source validation: PASS
 - :app:testStandardDebugUnitTest: PASS
@@ -78,13 +78,13 @@ Existing Box64/FEX presets, per-container/per-game settings, Wrapper/graphics se
 - Version: 1.2.1 Bionic, versionCode 23
 - APK size: 447,763,096 bytes (about 427 MiB)
 - Native ABI: arm64-v8a only
-- Native libraries: 22, 11,663,720 bytes uncompressed
+- Native libraries: 22, 11,663,800 bytes uncompressed
 - Assets: 110 entries, 433,937,395 bytes uncompressed
 - Artifact name: project-winlator-standard-debug-phase2
-- Artifact ID: 15158325113
-- Artifact ZIP size: 446,628,332 bytes
+- Artifact ID: 15157618638
+- Artifact ZIP size: 446,628,327 bytes
 - Artifact expires: 2026-12-10 UTC
-- Download page: https://github.com/suisuisui-spec/Project-Winlator-/actions/runs/45905407533
+- Download page: https://github.com/suisuisui-spec/Project-Winlator-/actions/runs/45905943515
 
 The artifact ZIP is larger than the APK because it includes the APK and inspection outputs. The APK size is measured separately above.
 

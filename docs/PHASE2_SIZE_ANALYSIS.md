@@ -2,8 +2,8 @@
 
 ## Latest successful APK inspection
 
-- CI run: 45905407533
-- Source commit: 96401a1f4c9d44b780b060a501f953114167f14d
+- CI run: 45905943515
+- Source commit: ddd75ccb66c3682e28d3aeed0e9a3f134325930d
 - APK: app/build/outputs/apk/standard/debug/app-standard-debug.apk
 - Package: com.winlator.mali
 - Version: 1.2.1 Bionic, versionCode 23
@@ -11,7 +11,7 @@
 - ZIP entries: 1,291
 - Native ABIs: arm64-v8a only
 - Native library count: 22
-- Native libraries, uncompressed: 11,663,720 bytes
+- Native libraries, uncompressed: 11,663,800 bytes
 - Asset entries: 110
 - Asset uncompressed total: 433,937,395 bytes
 - Asset compressed total: 432,187,879 bytes
