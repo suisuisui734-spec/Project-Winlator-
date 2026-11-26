@@ -22,18 +22,16 @@ public class ThermalGuardStateTest {
     }
 
     @Test
-    public void warningRangePreservesPreviousState() {
-        int warning = PowerManager.THERMAL_STATUS_LIGHT + 1;
-        assertTrue(ThermalGuardState.update(true, warning));
-        assertFalse(ThermalGuardState.update(false, warning));
+    public void unavailableStatusPreservesPreviousState() {
+        assertTrue(ThermalGuardState.update(true, -1));
+        assertFalse(ThermalGuardState.update(false, -1));
     }
 
     @Test
-    public void transitionsDoNotOscillateInsideWarningRange() {
+    public void stateRemainsStableAcrossValidTransitions() {
         boolean throttled = false;
         throttled = ThermalGuardState.update(throttled, PowerManager.THERMAL_STATUS_MODERATE);
-        throttled = ThermalGuardState.update(throttled, PowerManager.THERMAL_STATUS_LIGHT + 1);
-        throttled = ThermalGuardState.update(throttled, PowerManager.THERMAL_STATUS_SEVERE);
+        throttled = ThermalGuardState.update(throttled, -1);
         assertTrue(throttled);
         throttled = ThermalGuardState.update(throttled, PowerManager.THERMAL_STATUS_LIGHT);
         assertFalse(throttled);

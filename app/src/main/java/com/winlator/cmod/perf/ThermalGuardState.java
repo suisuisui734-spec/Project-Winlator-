@@ -8,9 +8,10 @@ public final class ThermalGuardState {
 
     /**
      * Pause optional hints at MODERATE or higher. Resume only at LIGHT or lower.
-     * Intermediate statuses preserve the previous state to prevent rapid switching.
+     * Unknown status values preserve the previous state.
      */
     public static boolean update(boolean currentlyThrottled, int thermalStatus) {
+        if (thermalStatus < PowerManager.THERMAL_STATUS_NONE) return currentlyThrottled;
         if (thermalStatus >= PowerManager.THERMAL_STATUS_MODERATE) return true;
         if (thermalStatus <= PowerManager.THERMAL_STATUS_LIGHT) return false;
         return currentlyThrottled;
