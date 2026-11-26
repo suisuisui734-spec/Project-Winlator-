@@ -27,7 +27,7 @@ jobs:
         run: |
           set -euo pipefail
           git clone --depth 1 --single-branch --branch bionic-mali-1.2 \
-            https://github.com/GunaCharanTeja/WinlatorMali.git upstream
+            https://github.com/GunaCharanTeja/WinlatorMali.git "$RUNNER_TEMP/winlator-mali-source"
 
       - name: Copy source into the main repository root
         shell: bash
