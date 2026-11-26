@@ -11,26 +11,15 @@ permissions:
 jobs:
   mirror:
     runs-on: ubuntu-latest
-
     steps:
       - name: Mirror upstream branches and tags
         shell: bash
         run: |
           set -euo pipefail
-
-          git clone --bare \
-            https://github.com/GunaCharanTeja/WinlatorMali.git source.git
-
+          git clone --bare https://github.com/GunaCharanTeja/WinlatorMali.git source.git
           cd source.git
-
-          git push \
-            "https://x-access-token:${GITHUB_TOKEN}@github.com/${TARGET_REPO}.git" \
-            --all
-
-          git push \
-            "https://x-access-token:${GITHUB_TOKEN}@github.com/${TARGET_REPO}.git" \
-            --tags
-
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${TARGET_REPO}.git" --all
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${TARGET_REPO}.git" --tags
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TARGET_REPO: suisuisui734-spec/Project-Winlator-
