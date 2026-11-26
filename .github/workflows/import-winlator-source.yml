@@ -1,0 +1,43 @@
+name: Import Winlator Mali source
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/import-winlator-source.yml
+  schedule:
+    - cron: "13 5 * * *"
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Import upstream source into folder
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth 1 https://github.com/GunaCharanTeja/WinlatorMali.git upstream
+          mkdir -p winlator-mali
+          rsync -a --delete --exclude='.git' upstream/ winlator-mali/
+          git -C upstream rev-parse HEAD > winlator-mali/UPSTREAM_COMMIT.txt
+      - name: Commit and push if changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add winlator-mali
+          if git diff --cached --quiet; then
+            echo "No upstream changes"
+            exit 0
+          fi
+          git commit -m "Import Winlator Mali source"
+          git push origin HEAD:main
