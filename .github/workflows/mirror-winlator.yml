@@ -1,4 +1,4 @@
-name: Mirror Winlator Mali
+name: Import Winlator Mali to main
 
 on:
   workflow_dispatch:
@@ -13,26 +13,96 @@ permissions:
   contents: write
 
 jobs:
-  mirror:
+  import-source:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 120
     steps:
-      - name: Mirror upstream branches and tags into a separate namespace
+      - name: Check out Project Winlator
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Clone Winlator Mali source
         shell: bash
         run: |
           set -euo pipefail
-          UPSTREAM="https://github.com/GunaCharanTeja/WinlatorMali.git"
-          TARGET="https://x-access-token:${GITHUB_TOKEN}@github.com/${TARGET_REPO}.git"
-          echo "Cloning upstream Winlator Mali..."
-          git clone --bare "$UPSTREAM" source.git
-          cd source.git
-          echo "Mirroring branches to upstream-mali/*..."
-          git push --prune "$TARGET" 'refs/heads/*:refs/heads/upstream-mali/*'
-          echo "Mirroring tags to upstream-mali/*..."
-          git push --prune "$TARGET" 'refs/tags/*:refs/tags/upstream-mali/*'
-          echo "Checking mirrored refs..."
-          git ls-remote "$TARGET" 'refs/heads/upstream-mali/*' 'refs/tags/upstream-mali/*'
-          echo "Mirror completed."
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TARGET_REPO: suisuisui734-spec/Project-Winlator-
+          git clone --depth 1 --single-branch --branch bionic-mali-1.2 \
+            https://github.com/GunaCharanTeja/WinlatorMali.git upstream
+
+      - name: Copy source into the main repository root
+        shell: bash
+        run: |
+          set -euo pipefail
+          rsync -a --delete \
+            --exclude='/.git/' \
+            --exclude='/.github/workflows/mirror-winlator.yml' \
+            upstream/ ./
+
+      - name: Set project name to Project Winlator
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          readme = Path("README.md")
+          if readme.exists():
+              text = readme.read_text(encoding="utf-8")
+              text = re.sub(r"(?m)^# .*$", "# Project Winlator", text, count=1)
+              note = "> Project Winlator source tree, based on Winlator Mali (Bionic Edition).\n\n"
+              if not text.startswith("# Project Winlator"):
+                  text = "# Project Winlator\n\n" + text
+              if note.strip() not in text:
+                  text = text.replace("# Project Winlator\n", "# Project Winlator\n\n" + note, 1)
+              readme.write_text(text, encoding="utf-8")
+
+          settings = Path("settings.gradle")
+          if settings.exists():
+              text = settings.read_text(encoding="utf-8")
+              text, count = re.subn(
+                  r'rootProject\.name\s*=\s*["\'][^"\']*["\']',
+                  'rootProject.name = "Project Winlator"',
+                  text,
+                  count=1,
+              )
+              if count:
+                  settings.write_text(text, encoding="utf-8")
+
+          # Rename the Android launcher label when the upstream source defines it.
+          for xml in Path("app/src/main/res").glob("**/*.xml"):
+              text = xml.read_text(encoding="utf-8")
+              updated, count = re.subn(
+                  r'(<string\s+name=["\']app_name["\'][^>]*>).*?(</string>)',
+                  r'\g<1>Project Winlator\g<2>',
+                  text,
+                  count=1,
+                  flags=re.DOTALL,
+              )
+              if count:
+                  xml.write_text(updated, encoding="utf-8")
+          PY
+
+      - name: Commit imported source to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Source is already up to date."
+            exit 0
+          fi
+          git commit -m "Import Winlator Mali source as Project Winlator"
+          git push origin HEAD:main
+
+      - name: Verify main contains the Android project
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -d app/src/main
+          test -f settings.gradle
+          test -f gradlew
+          test -f .gitmodules
+          echo "Project Winlator source is present at the repository root."
