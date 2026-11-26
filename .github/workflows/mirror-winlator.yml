@@ -36,6 +36,7 @@ jobs:
           rsync -a --delete \
             --exclude='/.git/' \
             --exclude='/.github/workflows/mirror-winlator.yml' \
+            --exclude='/.github/workflows/build-apk.yml' \
             "$RUNNER_TEMP/winlator-mali-source/" ./
 
       - name: Set project name to Project Winlator
