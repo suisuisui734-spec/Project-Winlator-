@@ -25,7 +25,7 @@ static void *vulkan_handle = NULL;
 
 
 static char *get_native_library_dir(JNIEnv *env, jobject context) {
-    char *native_libdir;
+    char *native_libdir = NULL;
 
     if (context != NULL) {
         jclass class_ = (*env)->FindClass(env,"com/winlator/cmod/core/AppUtils");
@@ -42,8 +42,8 @@ static char *get_native_library_dir(JNIEnv *env, jobject context) {
 }
 
 static char *get_driver_path(JNIEnv *env, jobject context, const char *driver_name) {
-    char *driver_path;
-    char *absolute_path;
+    char *driver_path = NULL;
+    char *absolute_path = NULL;
 
     jclass contextWrapperClass = (*env)->FindClass(env, "android/content/ContextWrapper");
     jmethodID  getFilesDir = (*env)->GetMethodID(env, contextWrapperClass, "getFilesDir", "()Ljava/io/File;");
@@ -63,7 +63,7 @@ static char *get_driver_path(JNIEnv *env, jobject context, const char *driver_na
 }
 
 static char *get_library_name(JNIEnv *env, jobject context, const char *driver_name) {
-    char *library_name;
+    char *library_name = NULL;
 
     jclass adrenotoolsManager = (*env)->FindClass(env, "com/winlator/cmod/contents/AdrenotoolsManager");
     jmethodID constructor = (*env)->GetMethodID(env, adrenotoolsManager, "<init>", "(Landroid/content/Context;)V");
@@ -82,21 +82,45 @@ static void init_original_vulkan() {
     vulkan_handle = dlopen("/system/lib64/libvulkan.so", RTLD_LOCAL | RTLD_NOW);
 }
 
-static void init_vulkan(JNIEnv  *env, jobject context, const char *driver_name) {
-    char *tmpdir;
-    char *library_name;
-    char *native_library_dir;
+static void init_vulkan(JNIEnv *env, jobject context, const char *driver_name) {
+    char *tmpdir = NULL;
+    char *library_name = NULL;
+    char *native_library_dir = NULL;
+    const char *driver_path = context != NULL
+            ? get_driver_path(env, context, driver_name)
+            : NULL;
 
-    const char *driver_path = get_driver_path(env, context, driver_name);
+    if (driver_path == NULL || access(driver_path, F_OK) != 0) {
+        // Missing custom driver: fall back to the Android system Vulkan loader.
+        init_original_vulkan();
+        return;
+    }
 
-    if (driver_path && (access(driver_path, F_OK) == 0)) {
-        library_name = get_library_name(env, context, driver_name);
-        native_library_dir = get_native_library_dir(env, context);
-        asprintf(&tmpdir, "%s%s", driver_path, "temp");
+    library_name = get_library_name(env, context, driver_name);
+    native_library_dir = get_native_library_dir(env, context);
+    if (library_name == NULL || native_library_dir == NULL) {
+        // Incomplete custom-driver configuration must not pass invalid paths to adrenotools.
+        init_original_vulkan();
+        return;
+    }
+
+    if (asprintf(&tmpdir, "%s%s", driver_path, "temp") >= 0 && tmpdir != NULL) {
         mkdir(tmpdir, S_IRWXU | S_IRWXG);
     }
 
-    vulkan_handle = adrenotools_open_libvulkan(RTLD_LOCAL | RTLD_NOW, ADRENOTOOLS_DRIVER_CUSTOM, tmpdir, native_library_dir, driver_path, library_name, NULL, NULL);
+    vulkan_handle = adrenotools_open_libvulkan(
+            RTLD_LOCAL | RTLD_NOW,
+            ADRENOTOOLS_DRIVER_CUSTOM,
+            tmpdir,
+            native_library_dir,
+            driver_path,
+            library_name,
+            NULL,
+            NULL
+    );
+    if (vulkan_handle == NULL) {
+        init_original_vulkan();
+    }
 }
 
 static VkResult create_instance(jstring driverName, JNIEnv *env, jobject context) {
