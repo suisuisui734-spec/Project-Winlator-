@@ -7,6 +7,7 @@
 - Source lineage: Winlator Mali Bionic branch `bionic-mali-1.2`
 - Target device: MediaTek Helio G100 / Mali GPU / Android / ARM64
 - Working branch: `feature/helio-g100-mali-optimization`
+- Verified build commit: `71804736d1f5dda868ed0b2914fdde587fee5c52`
 
 The repository is an Android application source tree, not a JavaScript project. This audit preserves its upstream native runtime, graphics assets, Wine/Box64/FEX packages and attribution.
 
@@ -33,15 +34,18 @@ The repository is an Android application source tree, not a JavaScript project. 
 - FEXCore has its own preset manager and environment-variable catalog.
 - Resolution is stored per container through `Container.screenSize`; display scaling and custom display resolution controls already exist.
 - Per-container graphics driver selection and BCn options are already present.
+- `ShortcutSettingsDialog` already stores per-game overrides for resolution, graphics driver/configuration, DX wrapper, Box64/FEX versions and presets, environment variables and CPU lists. A second profile manager was not added.
 - `WinlatorHUD` and `HudDataSource` provide frame/FPS information, GPU/CPU metrics where available, battery/RAM and thermal status. Sampling is background-threaded at approximately 1.5-second intervals.
 - `PerformanceManager` already provides Android Game Mode signaling, optional thread-priority hints, optional CPU affinity, sustained-performance mode and Samsung-specific hooks.
+- The BCn dialog already provides a per-container cache enable/disable setting. A generic cache purge action was not added because the safe cache paths and ownership boundaries were not validated for every container/runtime.
 
 ## Findings and changes applied on this branch
 
 1. CPU big-core detection previously guessed that the upper half of logical CPUs were the big cluster when sysfs frequency data was unavailable. That assumption is unsafe across MediaTek/OEM topologies. The fallback was removed: missing topology data now means no affinity change. CPU affinity masks are also bounds-checked.
 2. The performance manager now includes an Android 10+ thermal status listener with hysteresis: pause optional thread-priority and sustained-performance hints at Moderate or higher; resume only at Light or lower. The guard never changes frequencies, voltage, thermal limits or kernel settings.
 3. The Performance settings page now displays read-only device, SoC, hardware, ABI, RAM, renderer and thermal API information where Android exposes it. GPU renderer detection is best-effort and failure-safe.
-4. The build workflow gains feature-branch push and pull-request build triggers plus a source validation script. The default CI build produces a standard debug APK artifact.
+4. The build workflow gains feature-branch push and pull-request build triggers plus a source validation script. The standard debug workflow validates source, runs unit-test/lint tasks, compiles the arm64 APK/native targets and uploads an artifact.
+5. GitHub Actions run `45901386995` completed successfully for commit `71804736d1f5dda868ed0b2914fdde587fee5c52`.
 
 ## Potential bottlenecks
 
@@ -49,6 +53,7 @@ The repository is an Android application source tree, not a JavaScript project. 
 - GPU load/clock visibility depends on OEM sysfs permissions or access to supported Mali counters; metrics may legitimately be unavailable.
 - CPU frequency sysfs nodes can be hidden by Android. Affinity therefore remains optional and no cluster layout is inferred when detection fails.
 - Gradle `downloadAssets` fetches `imagefs.tzst` from an upstream release URL during pre-build. This is an external build dependency and currently has no repository-pinned checksum.
+- The uploaded CI artifact archive is 446,623,228 bytes (about 426 MiB). This is a size warning for future packaging work; no drivers, root filesystem, runtime libraries or source files were stripped to reduce it.
 - The app is ARM64-only by its Gradle ABI filter; 32-bit builds are not configured.
 
 ## Compatibility risks

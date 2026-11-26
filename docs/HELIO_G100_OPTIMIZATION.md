@@ -34,6 +34,7 @@ For a detected Mali renderer, the summary reminds the user of the existing upstr
 | Box64 profiles | `Box64PresetManager`, including Stability / Compatibility / Intermediate / Performance and custom presets |
 | FEX profiles | Existing FEXCore preset manager and environment variable catalog |
 | Per-container resolution | `Container.screenSize`, display-resolution settings |
+| Per-game overrides | `ShortcutSettingsDialog`: per-shortcut resolution, graphics/DX wrapper, Box64/FEX versions and presets, env vars and CPU list |
 | Performance HUD | `WinlatorHUD`, `HudDataSource`, `MaliGpuCounters` |
 | Container persistence | Existing container JSON serialization and manager |
 | Game-session performance hooks | `PerformanceManager` |
@@ -46,14 +47,24 @@ For a detected Mali renderer, the summary reminds the user of the existing upstr
 - No global Android display resolution change, mandatory upscaling, frame generation, overclock or root-only operation is introduced.
 - No duplicate Box64 preset or container manager was created because equivalent systems already exist.
 - CPU big-core affinity remains opt-in and is only applied when topology can be detected from the device.
+- The BCn cache setting can be toggled per graphics configuration; a general-purpose cache deletion UI was not added because cache paths/data ownership were not verified well enough to promise that game data is safe.
+
+## CI build result
+
+- GitHub Actions run `45901386995`: SUCCESS.
+- Commit: `71804736d1f5dda868ed0b2914fdde587fee5c52`.
+- Tasks passed: source validation, standard debug unit-test task, lint, debug APK and native compilation, artifact upload.
+- Uploaded artifact: `project-winlator-standard-debug`, archive size 446,623,228 bytes (about 426 MiB). This is the artifact archive size, not an independently measured APK size.
+- The repository currently has no `src/test` or `src/androidTest` source files, so the unit-test task completed without project-authored test cases.
 
 ## Remaining work
 
-- Validate actual build, unit-test and lint tasks in GitHub Actions.
-- Test installation, first-run rootfs extraction, container launch/stop, wrapper/BCn rendering and HUD on a physical Helio G100 phone.
+- Install and exercise the APK on a physical Helio G100 device.
+- Test first-run rootfs extraction, container launch/stop, wrapper/BCn rendering and HUD.
 - Observe thermal transitions during repeatable game workloads and confirm optional hints pause/resume without affecting game stability.
-- Measure FPS/frametime before and after under the same game, container, resolution, driver, ambient temperature and battery conditions. No FPS gain is claimed until those measurements exist.
+- Benchmark FPS and frame times before/after under the same game, container, resolution, driver and ambient/device conditions. No performance uplift is claimed.
+- Investigate a safe way to distribute large runtime assets separately or as an on-demand download, with integrity checking and offline/retry handling, rather than stripping required drivers or runtime data.
 
 ## Rollback
 
-Revert the commits on `feature/helio-g100-mali-optimization`, or leave the branch unused. The default `main` branch is not modified by this work.
+Revert the commits on `feature/helio-g100-mali-optimization`, or leave the branch unused. The default `main` branch is not modified.

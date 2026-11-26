@@ -15,16 +15,29 @@
 
 | Check | Procedure | Expected result | Actual status |
 |---|---|---|---|
-| Source layout | `bash scripts/validate-source.sh` | Required Android/native files exist | Pending workflow |
-| ARM64 config | Validate `abiFilters` and NDK | arm64-v8a only, requested NDK | Pending workflow |
-| JSON assets | Parse Box64/FEX/GPU JSON assets | Valid JSON arrays | Pending workflow |
-| Native graph | Validate Mali counters and ZeroFG CMake entries | Targets registered | Pending workflow |
-| Unit tests | `:app:testStandardDebugUnitTest` | Task completes | Pending workflow |
-| Lint | `:app:lintStandardDebug` | Task completes; existing warnings may remain | Pending workflow |
-| APK | `:app:assembleStandardDebug` | Debug APK produced | Pending workflow |
-| Native build | Built as part of APK assemble | arm64 native libraries compile | Pending workflow |
+| Source layout | `bash scripts/validate-source.sh` | Required Android/native files exist | PASS |
+| ARM64 config | Validate `abiFilters` and NDK | arm64-v8a only, requested NDK | PASS |
+| JSON assets | Parse Box64/FEX/GPU JSON assets | Valid JSON arrays | PASS |
+| Native graph | Validate Mali counters and ZeroFG CMake entries | Targets registered | PASS |
+| Unit test task | `:app:testStandardDebugUnitTest` | Task completes | PASS — task succeeded; repository currently contains no `src/test` or `src/androidTest` source files, so no project-authored test cases ran |
+| Lint | `:app:lintStandardDebug` | Task completes | PASS |
+| APK | `:app:assembleStandardDebug` | Debug APK produced | PASS |
+| Native build | Built as part of APK assemble | arm64 native libraries compile | PASS |
+| Artifact upload | `actions/upload-artifact@v4` | APK artifact available | PASS |
 
-The build workflow runs source validation, unit tests, lint and APK assemble for the standard debug variant, then uploads an artifact.
+### Verified GitHub Actions result
+
+- Workflow: Build Project Winlator APK
+- Run ID: `45901386995`
+- Run result: `SUCCESS`
+- Tested source commit: `71804736d1f5dda868ed0b2914fdde587fee5c52`
+- Variant: `standardDebug`
+- Artifact: `project-winlator-standard-debug`
+- Artifact archive size: `446,623,228 bytes` (about 426 MiB)
+- Artifact expiry: `2026-12-10`
+- Run page: https://github.com/suisuisui-spec/Project-Winlator-/actions/runs/45901386995
+
+The reported size is the GitHub artifact archive size, not a separately measured APK file size. The APK is available from the workflow run's Artifacts section.
 
 ## Manual device regression procedure
 
@@ -39,6 +52,8 @@ The build workflow runs source validation, unit tests, lint and APK assemble for
 9. Pause, resume and stop the container. Confirm no stale foreground service or performance hints remain.
 10. Reboot and verify saved preferences and container settings persist.
 
+All ten device procedures above remain NOT TESTED because a physical Helio G100 test session was not available to this CI run.
+
 ## Required benchmark protocol
 
 For a valid before/after comparison, keep the same game build, container, Box64/FEX version and preset, graphics driver, wrapper version, resolution, frame cap, scene, battery range, ambient temperature and background workload. Capture at least three runs per configuration and compare average FPS plus frame-time percentiles/1% lows. Record device and OS build. Do not substitute synthetic figures for device measurements.
@@ -47,7 +62,10 @@ For a valid before/after comparison, keep the same game build, container, Box64/
 
 - Repository inspection: DONE.
 - Feature branch created: DONE.
-- Source-level changes and documentation: committed on feature branch; CI pending.
-- Gradle/native compilation: NOT TESTED yet.
+- Source-level changes and documentation: DONE on feature branch.
+- Source validation, lint, unit-test task and standard debug APK/native compilation: PASS in workflow `45901386995`.
+- Dedicated project-authored unit test cases: NOT PRESENT in repository at this revision.
+- Artifact upload: PASS; artifact archive is available from the linked workflow run.
 - Helio G100 physical-device test: NOT TESTED.
+- Container runtime, HUD thermal transitions, and manual rendering regression: NOT TESTED.
 - Performance uplift: NOT MEASURED.
