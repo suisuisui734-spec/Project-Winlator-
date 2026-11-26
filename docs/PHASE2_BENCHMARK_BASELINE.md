@@ -2,45 +2,51 @@
 
 ## Test availability
 
-- Helio G100 physical device: NOT AVAILABLE to this execution.
+- Helio G100 physical device: NOT AVAILABLE.
 - Original repository build: NOT BENCHMARKED on device.
-- Phase 1 optimized build: CI artifact exists, but no game benchmark has been run.
-- Phase 2 optimized build: pending Phase 2 CI.
-- Emulator gaming benchmark: NOT RUN; an emulator is not a substitute for Helio G100 Mali behavior.
+- Phase 1 optimized build: CI APK exists, but no game benchmark was run.
+- Phase 2 optimized build: APK/native CI build passes, but no game benchmark was run.
+- Emulator gaming comparison: NOT RUN; an emulator does not reproduce Helio G100 Mali GPU behavior.
 
-## Required three-build comparison
+## Three-build comparison
 
 | Metric | Original repository | Phase 1 | Phase 2 |
 |---|---|---|---|
 | Average FPS | NOT TESTED | NOT TESTED | NOT TESTED |
 | Minimum FPS | NOT TESTED | NOT TESTED | NOT TESTED |
-| Frame-time average / p95 / p99 | NOT TESTED | NOT TESTED | NOT TESTED |
+| Frame-time average / p50 / p95 / p99 | NOT TESTED | NOT TESTED | NOT TESTED |
 | Frame-time variance | NOT TESTED | NOT TESTED | NOT TESTED |
 | Stutter events | NOT TESTED | NOT TESTED | NOT TESTED |
 | CPU utilization | NOT TESTED | NOT TESTED | NOT TESTED |
 | GPU utilization | NOT TESTED | NOT TESTED | NOT TESTED |
-| RAM during game | NOT TESTED | NOT TESTED | NOT TESTED |
+| App/guest RAM | NOT TESTED | NOT TESTED | NOT TESTED |
 | Container startup | NOT TESTED | NOT TESTED | NOT TESTED |
 | Game loading time | NOT TESTED | NOT TESTED | NOT TESTED |
 | Thermal status / degradation | NOT TESTED | NOT TESTED | NOT TESTED |
 
-No improvement is inferred from static changes or successful compilation.
+No performance gain is inferred from source changes or a successful CI build.
 
 ## Reproducible protocol
 
-1. Use the same physical Helio G100 phone, OS build, game version and save.
-2. Reset device to the same thermal starting condition. Use the same battery range, charging state, ambient temperature and background apps.
-3. Use the same container image, prefix, Wine version, Box64/FEX version, graphics driver/wrapper, DXVK/VKD3D settings, resolution, refresh rate and frame cap.
-4. Select one repeatable scene and scripted path. Do not change scenes between builds.
-5. Capture at least three 180-second runs per build after a warm-up run. Save native HUD frame-time samples where available.
-6. Record average FPS, 1%/0.1% lows where enough samples exist, frame-time p50/p95/p99, frame-time standard deviation, stutter count, app/guest memory, CPU/GPU metrics if exposed, startup times and thermal status.
-7. Compare the median of the three runs and retain every raw CSV. Reject changes that improve average FPS while materially worsening p99 frame time, crash rate or thermal degradation.
-8. Repeat the same protocol for original, Phase 1 and Phase 2 builds. Never compare different scenes/configurations.
+1. Use the same physical Helio G100 phone, OS build, game binary/version, save and container image.
+2. Start from the same thermal state; keep battery range, charging state, ambient temperature, refresh rate and background apps consistent.
+3. Keep Wine, Box64/FEX version and preset, graphics driver/wrapper, DXVK/VKD3D, BCn settings, resolution, frame cap and game settings identical.
+4. Choose one repeatable scene and scripted route. Do not change scenes between builds.
+5. Run one warm-up followed by at least three 180-second runs for each build.
+6. Record average FPS, reliable low percentiles, frame-time p50/p95/p99, standard deviation, stutter count, process PSS/RSS, CPU/GPU metrics if exposed, startup times and thermal status.
+7. Compare the median of three runs. Reject a change if average FPS rises but p99 frame time, crash rate or thermal degradation materially worsens.
+8. Repeat the same procedure for original, Phase 1 and Phase 2 builds.
 
 ## Definitions
 
 - Average FPS: game-rendered frames divided by elapsed seconds; generated frames must be reported separately.
-- Frame time: milliseconds between consecutive game frames, not HUD refresh intervals.
-- Stutter event: choose a threshold before testing (recommended: frame time above twice the target interval) and keep it identical for all builds.
-- RAM: report process PSS/RSS and total system memory separately.
-- CPU/GPU usage: report only values from an identified readable source; unavailable values must remain unavailable.
+- Frame time: time between consecutive game frames, not HUD sampling intervals.
+- Stutter event: define a threshold before testing (for example, more than twice the target frame interval) and keep it identical across builds.
+- RAM: report process PSS/RSS and whole-device memory separately.
+- GPU/CPU load: report only a named, readable metric source. Use NOT AVAILABLE if OEM permissions block counters.
+
+## Current result
+
+- FPS/frame-time/stutter improvement: NO MEASURED IMPROVEMENT.
+- Thermal stability on target phone: NOT TESTED.
+- Native and configuration build checks: PASS in CI.

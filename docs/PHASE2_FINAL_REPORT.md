@@ -2,68 +2,117 @@
 
 ## Repository
 
-- Repository: suisuisui734-spec/Project-Winlator-
+- Repository: suisuisui-spec/Project-Winlator-
 - Original main baseline: 79d178f94b71addbdb3ce43dfaa1c78ca22f595f
-- Phase 1 base: acd97ce71b17dd7c8b646c66db4e8bf163e3d02a
+- Phase 1 source base: acd97ce71b17dd7c8b646c66db4e8bf163e3d02a
 - Phase 2 branch: feature/helio-g100-performance-phase2
-- Phase 2 modified commit: PENDING commit creation
-- main must remain unchanged.
+- Verified Phase 2 source commit: 96401a1f4c9d44b780b060a501f953114167f14d
+- main remains unchanged.
 
 ## Performance findings
 
-### Confirmed source issues
-- ProcessHelper.setLinuxAffinity masked the supplied affinity to 8 bits even though CpuTopology builds an int CPU mask.
-- New one-off executor services were created repeatedly for process stream readers/waiters, container create/duplicate/remove, and XServer background work; the executor services were not shut down.
-- HUD redraw stopped when the overlay was hidden, but the data source kept sampling.
+### Confirmed source issues corrected
 
-These are source-code findings, not measured FPS bottlenecks. Expected outcomes are reduced worker-thread churn, no hidden-HUD sampling, and correct propagation of affinity bits. No numeric performance uplift is claimed.
+- CPU affinity mask was truncated to 8 bits despite CpuTopology using a 32-bit mask.
+- Repeated one-off executor services were created for process stream/wait operations, container create/duplicate/remove and XServer background tasks without shutdown.
+- Shortcut artwork used a permanent fixed worker pool.
+- HUD stopped redraw when hidden but telemetry kept polling.
+- Vulkan custom-driver initialization could pass uninitialized path pointers to adrenotools when path/string lookup failed.
 
-### GPU / frame-time / memory
-- No Helio G100 shader hitch, GL/Vulkan synchronization stall, GPU saturation or memory pressure was measured.
-- PostFX effect shader variants are cached in memory after their first compilation.
-- Frame generation contains glFinish fallback paths when sync-file interoperability is unavailable. Whether the target uses those paths remains NOT TESTED.
-- No graphics driver, wrapper, runtime or game data was removed or changed.
+Changes correct these code paths and make Vulkan fall back to Android's system loader when custom driver setup is incomplete. These are source/stability fixes, not measured FPS gains.
+
+### GPU, frame time and memory
+
+- No Helio G100 shader hitch, GPU saturation, GL/Vulkan synchronization stall or memory pressure was measured.
+- PostFX shader variants remain cached in memory after compile; no additional shader cache was added.
+- Frame generation has a conditional glFinish fallback if sync-file handoff is unavailable; whether the target phone enters this path remains NOT TESTED.
+- No driver, wrapper, runtime archive, native library or game/container data was removed.
+- APK size is dominated by bundled runtime assets, especially imagefs and the common container pattern archive.
 
 ## Changes
 
-Planned/implemented on Phase 2 branch:
-- Shared background, serial-I/O and asset executors with idle timeout.
-- Pauseable, lazy HUD telemetry worker.
-- Full-width CPU affinity-mask formatting.
-- Pure thermal hysteresis helper and device-independent unit tests.
-- APK package, ABI and resource inspection in CI.
+### Source files modified or added
 
-No undocumented Box64/FEX environment variable or forced Mali driver was introduced. Existing per-container/per-game Box64, FEX, resolution and graphics settings are reused.
+- app/src/main/cpp/winlator/vulkan.c
+- app/src/main/java/com/winlator/cmod/core/ProcessHelper.java
+- app/src/main/java/com/winlator/cmod/core/AppExecutors.java (new)
+- app/src/main/java/com/winlator/cmod/container/ContainerManager.java
+- app/src/main/java/com/winlator/cmod/container/Shortcut.java
+- app/src/main/java/com/winlator/cmod/XServerDisplayActivity.java
+- app/src/main/java/com/winlator/cmod/widget/HudDataSource.java
+- app/src/main/java/com/winlator/cmod/widget/WinlatorHUD.java
+- app/src/main/java/com/winlator/cmod/perf/CpuTopology.java
+- app/src/main/java/com/winlator/cmod/perf/PerformanceManager.java
+- app/src/main/java/com/winlator/cmod/perf/ThermalGuardState.java (new)
+- app/build.gradle
+- .github/workflows/build-apk.yml
+- scripts/inspect-apk.py (new)
+- Three JUnit test files under app/src/test/java.
 
-## Build and artifact
+### Behavior changes
 
-- Source validation: PENDING CI
-- Unit tests: PENDING CI
-- Android lint: PENDING CI
-- Standard debug APK: PENDING CI
-- Native arm64-v8a build: PENDING CI
-- APK metadata/ABI inspection: PENDING CI
-- APK size: PENDING inspection report
-- Artifact location: pending successful Phase 2 Actions run.
+- Shared idle-expiring background workers; serial I/O for container directory mutations.
+- Lazy/pauseable HUD telemetry.
+- Full-width CPU affinity formatting and unit tests.
+- Pure, unit-tested thermal hysteresis; unavailable status preserves prior state.
+- Vulkan custom-driver path checks and system-loader fallback.
+- APK metadata/ABI/asset inspection in CI.
+
+Existing Box64/FEX presets, per-container/per-game settings, Wrapper/graphics settings and BCn cache mechanisms are reused. No undocumented Box64/FEX variables or forced Mali driver were added.
+
+## Build
+
+- GitHub Actions run: 45905407533
+- Overall result: SUCCESS
+- Source validation: PASS
+- :app:testStandardDebugUnitTest: PASS
+- :app:lintStandardDebug: PASS
+- Standard debug APK: PASS
+- Native ARM64 compilation: PASS
+- APK metadata/ABI inspection: PASS
+- Artifact upload: PASS
+
+### APK and artifact
+
+- Package: com.winlator.mali
+- Version: 1.2.1 Bionic, versionCode 23
+- APK size: 447,763,096 bytes (about 427 MiB)
+- Native ABI: arm64-v8a only
+- Native libraries: 22, 11,663,720 bytes uncompressed
+- Assets: 110 entries, 433,937,395 bytes uncompressed
+- Artifact name: project-winlator-standard-debug-phase2
+- Artifact ID: 15158325113
+- Artifact ZIP size: 446,628,332 bytes
+- Artifact expires: 2026-12-10 UTC
+- Download page: https://github.com/suisuisui-spec/Project-Winlator-/actions/runs/45905407533
+
+The artifact ZIP is larger than the APK because it includes the APK and inspection outputs. The APK size is measured separately above.
 
 ## Testing and benchmark
 
-- Static source inspection: DONE.
-- Physical Helio G100 game test: NOT TESTED.
-- Device thermal transitions: NOT TESTED.
-- Mali GPU telemetry: NOT TESTED.
-- FPS/frame-time/stutter/RAM benchmark: NOT TESTED.
-- Emulator gaming comparison: NOT TESTED.
-- NO MEASURED IMPROVEMENT: no controlled device benchmark exists yet.
+- 10 added project-authored unit test methods: PASS.
+- Android lint: PASS.
+- ARM64 native compilation: PASS.
+- APK package metadata/ABI inspection: PASS.
+- Physical Helio G100 install/runtime test: NOT TESTED.
+- Real device thermal events: NOT TESTED.
+- Mali hardware counters/sysfs permissions: NOT TESTED.
+- Container launch/stop and game graphics regression: NOT TESTED.
+- FPS, frame time, stutter, RAM and thermal-degradation benchmark: NOT TESTED.
+- Performance result: NO MEASURED IMPROVEMENT because no controlled device benchmark exists.
+
+## Native warnings
+
+The latest native build no longer reports sometimes-uninitialized warnings for the Vulkan custom-driver pointers fixed in Phase 2. Other upstream warnings remain, primarily unused JNI parameters and signed/unsigned comparisons. These warnings do not fail the verified build.
 
 ## Stability and compatibility
 
-- Adreno Turnip is not forced on Mali.
+- Adreno Turnip is not forced onto Mali.
 - No Vulkan extension is forced.
-- No CPU/GPU frequency, voltage, kernel or Android thermal-protection setting is modified.
-- Changes are isolated to the Phase 2 feature branch.
-- Container operation callbacks are posted after the task attempt; runtime behavior must still be validated on device.
+- Android thermal protections, CPU/GPU frequencies, voltage and kernel settings are untouched.
+- System Vulkan fallback is preserved if custom driver preparation/loading fails.
+- All Phase 2 changes remain on the feature branch. No merge or release was created.
 
 ## Rollback
 
-Use feature/helio-g100-mali-optimization to return to the Phase 1 source. Do not merge Phase 2 into main until runtime and physical target-device regression checks are complete.
+Use feature/helio-g100-mali-optimization to return to Phase 1 source. Keep Phase 2 separate until target-device installation, runtime, graphics and benchmark regression checks are completed.

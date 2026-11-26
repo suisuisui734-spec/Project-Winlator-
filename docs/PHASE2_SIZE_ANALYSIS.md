@@ -1,44 +1,51 @@
 # Phase 2 APK and Resource Size Analysis
 
-## Source tree findings
+## Latest successful APK inspection
 
-The Phase 1 repository tree contained approximately 236 MiB of tracked blobs. The app asset directory accounted for approximately 223.3 MiB. Largest source archives included:
+- CI run: 45905407533
+- Source commit: 96401a1f4c9d44b780b060a501f953114167f14d
+- APK: app/build/outputs/apk/standard/debug/app-standard-debug.apk
+- Package: com.winlator.mali
+- Version: 1.2.1 Bionic, versionCode 23
+- Exact APK size: 447,763,096 bytes (about 427 MiB)
+- ZIP entries: 1,291
+- Native ABIs: arm64-v8a only
+- Native library count: 22
+- Native libraries, uncompressed: 11,663,720 bytes
+- Asset entries: 110
+- Asset uncompressed total: 433,937,395 bytes
+- Asset compressed total: 432,187,879 bytes
 
-| Asset | Approximate size |
+## Largest APK contents
+
+| APK entry | Uncompressed bytes |
 |---|---:|
-| container_pattern_common.tzst | 80.6 MiB |
-| wincomponents/direct3d.tzst | 29.8 MiB |
-| graphics_driver/adrenotools-v819.tzst | 9.4 MiB |
-| dxwrapper/dxvk-1.10.3.tzst | 7.2 MiB |
-| graphics_driver/wrapper.tzst | 3.9 MiB |
-| graphics_driver/wrapper-v2.tzst | 3.6 MiB |
-| graphics_driver/wrapper-1.1.tzst | 3.6 MiB |
+| assets/imagefs.tzst | 199,788,880 |
+| assets/container_pattern_common.tzst | 84,522,663 |
+| assets/wincomponents/direct3d.tzst | 31,207,067 |
+| classes.dex | 11,046,824 |
+| assets/graphics_driver/adrenotools-v819.tzst | 9,881,991 |
 
-The asset inventory also contains multiple Box64, FEXCore, DXVK/VKD3D, Wrapper, Wine components and support data. Their presence is not proof that each item is duplicated or unused.
+Other large asset groups:
 
-## Known build packaging behavior
+| Group | Uncompressed bytes |
+|---|---:|
+| DX wrappers | 47,386,731 |
+| Windows components | 38,154,710 |
+| Graphics drivers | 33,465,796 |
+| FEXCore packages | 8,448,372 |
+| Box64 packages | 6,510,212 |
+| Layers archive | 4,447,187 |
 
-- app/build.gradle filters native builds to arm64-v8a, so only this ABI should be packaged.
-- The Gradle downloadAssets task fetches imagefs.tzst into app assets before preBuild. This is a large external build-time dependency and is bundled with the app assets unless packaging changes.
-- Phase 1 GitHub Actions artifact ZIP size was 446,623,228 bytes. This is not the separately measured APK file size.
-- No runtime archive, driver or wrapper was deleted in Phase 2.
+## Conclusions
 
-## Phase 2 APK inspection
+APK size is dominated by bundled runtime assets. The native library payload is about 11.7 MB and is not the main package-size driver. Native packaging already filters to arm64-v8a, so ABI splits would not materially reduce size while only this ABI is configured.
 
-After assembling the APK, Phase 2 CI runs aapt dump badging and scripts/inspect-apk.py. The JSON report records:
-- exact APK file size in bytes
-- package name and version metadata
-- native ABI list and native library byte totals
-- asset entry count, compressed/uncompressed totals and asset groups
-- 20 largest APK ZIP entries
+No runtime archive, driver, wrapper, Wine/Box64/FEX package, or game/container data was deleted to reduce size.
 
-The inspection fails CI if AndroidManifest.xml is missing, package metadata cannot be parsed, arm64-v8a is absent, or an unexpected ABI is packaged.
+## Safe future options
 
-Exact Phase 2 APK size and contents: PENDING CI inspection.
-
-## Safe size-reduction options for later evaluation
-
-- Measure archive use in actual install/container paths before making assets optional.
-- Preserve offline setup unless an explicit online-only mode is designed with checksum verification, atomic install, retry and offline fallback.
-- Do not remove older DXVK/Wrapper/Wine versions solely because they are large; containers or shortcuts may select them.
-- Keep ABI filtering at arm64-v8a until another supported target is intentionally added.
+- Design optional on-demand runtime packages only after verifying each asset's install/offline usage path.
+- Add trusted checksums, atomic writes, retries, resume, rollback and offline fallback before making any runtime download optional.
+- Preserve the existing bundled/offline mode.
+- Do not remove older Wrapper/DXVK/Wine versions until references from per-container and per-shortcut configurations are proven unused.

@@ -1,57 +1,87 @@
 # Phase 2 Performance Audit
 
-## Scope and environment
+## Scope
 
-- Repository: suisuisui734-spec/Project-Winlator-
-- Base source revision: Phase 1 acd97ce71b17dd7c8b646c66db4e8bf163e3d02a
-- Working branch: feature/helio-g100-performance-phase2
+- Original main: 79d178f94b71addbdb3ce43dfaa1c78ca22f595f
+- Phase 1 source base: acd97ce71b17dd7c8b646c66db4e8bf163e3d02a
+- Latest verified Phase 2 source: 96401a1f4c9d44b780b060a501f953114167f14d
 - Target: MediaTek Helio G100 / Mali / Android / ARM64
-- Physical device access: NOT AVAILABLE during this source audit
-- No FPS, frame-time, GPU-load, CPU-load, thermal or RAM improvement is claimed from static inspection alone.
+- Physical target device: NOT AVAILABLE during this execution.
 
-## Confirmed source findings
+Static source findings and a successful build do not establish a real-world FPS improvement. No FPS, frame-time, GPU-load, CPU-load, thermal, or game-RAM result was measured on the target device.
 
-| Finding | Evidence | Files | Expected impact | Risk | Device-free verification |
-|---|---|---|---|---|---|
-| Affinity mask is truncated to 8 bits | ProcessHelper.setLinuxAffinity formatted mask & 0xff, while CpuTopology builds a 32-bit mask | core/ProcessHelper.java, perf/CpuTopology.java | Correctly passes selected indices above 7; no guaranteed scheduling gain | Low | YES: pure formatting tests and compile |
-| Repeated one-off executors are not shut down | New single-thread executor per stream/wait task, container create/duplicate/remove, and XServer work | core/ProcessHelper.java, container/ContainerManager.java, XServerDisplayActivity.java | Avoids leaving one idle executor thread per completed job; lowers thread creation churn | Low–medium | YES: code review, compile, unit tests |
-| HUD telemetry keeps running after the overlay is hidden | disableByUser stops redraw but does not stop HudDataSource; the source polls every 1.5 seconds | widget/WinlatorHUD.java, widget/HudDataSource.java | Avoids background proc/sysfs reads and Mali-counter sampling while HUD is hidden | Low–medium | YES: lifecycle/source checks; physical sensor access remains NOT TESTED |
-| Thermal hysteresis is embedded in a manager | Transition logic is pure state logic inside PerformanceManager | perf/PerformanceManager.java | Allows automated transition regression tests | Low | YES: pure unit tests |
+## Confirmed source findings and fixes
+
+| Finding | Evidence | Files | Change | Expected impact | Risk | Device-free verification |
+|---|---|---|---|---|---|---|
+| CPU affinity mask truncated to eight bits | ProcessHelper.setLinuxAffinity formatted mask & 0xff although CpuTopology builds a 32-bit mask | ProcessHelper.java, CpuTopology.java | Pass full hexadecimal mask and add mask-format tests | Correctly passes selected core indices above 7; no guaranteed FPS gain | Low; taskset still checks actual allowed CPUs | PASS: unit-test task and build |
+| Repeated one-off executors | New single-thread executors constructed for process stream readers/waiters, container create/duplicate/remove, and XServer work without shutdown | ProcessHelper.java, ContainerManager.java, XServerDisplayActivity.java | Reuse shared background and serial-IO executors with idle expiry | Less repeated executor/thread creation and idle thread retention | Low–medium; runtime concurrency needs device regression | PASS: unit-test task and build |
+| Shortcut artwork uses a permanent fixed worker pool | Static fixed pool has no idle worker expiry | Shortcut.java | Reuse shared asset executor with core worker timeout | Releases idle asset threads after inactivity | Low | PASS: build/lint |
+| HUD telemetry continues while hidden | disableByUser stopped redraw but did not pause HudDataSource, which polls every 1.5 seconds | WinlatorHUD.java, HudDataSource.java | Lazy worker creation plus explicit pause/resume/stop | Avoids periodic proc/sysfs/Mali reads while HUD is hidden | Low–medium; runtime lifecycle still needs testing | PASS: build/lint; physical overlay test NOT TESTED |
+| Thermal state logic was embedded in manager | Hysteresis logic was a pure state transition embedded in PerformanceManager | PerformanceManager.java | Extract ThermalGuardState and test invalid/unavailable status | Enables repeatable tests and avoids treating missing data as cool | Low | PASS: unit-test task |
+| Vulkan custom-driver path used potentially uninitialized pointers | Clang reported -Wsometimes-uninitialized for native_libdir, driver_path and library_name; init_vulkan also passed uninitialized path values to adrenotools if setup failed | vulkan.c | Initialize pointers; validate custom paths/strings; fall back to Android system Vulkan loader if custom setup fails | Avoids undefined pointer use and preserves system graphics fallback | Medium; actual custom-driver fallback must be checked on device | PASS: latest native build; device behavior NOT TESTED |
 
 ## Potential bottlenecks (not confirmed)
 
-| Area | Evidence / uncertainty | Files | Impact | Risk | Device-free test |
+| Area | Evidence / uncertainty | Files | Potential impact | Risk | Device-free test |
 |---|---|---|---|---|---|
-| Shader compilation stalls | Renderer compiles GLSL on first use; PostFX effect variants are cached in memory after compile. No trace or hitch measurement exists | cpp/winlator/renderer/shader.cpp, postfx.cpp, egl.cpp | Could cause first-use frame-time spikes; not quantified | High if changing renderer synchronization or persistent cache | Compile/static inspection only |
-| GL/Vulkan synchronization fallback | Frame generation calls glFinish when native sync-file handoff is unavailable. Whether Helio G100 uses this path is unknown | cpp/winlator/renderer/frame_gen.cpp | Potential wait cost if fallback active | High; changing fences risks rendering corruption/hangs | Native build only; target device required to identify path |
-| Mali counter availability | Native counter reader may be blocked by SELinux/OEM permission. HUD also has sysfs fallbacks | cpp/winlator/mali_counters.cpp, widget/MaliGpuCounters.java, HudDataSource.java | Measurement quality only; no direct game-performance effect established | High for device-specific ioctl changes | NO; physical device needed |
-| Asset/startup I/O | Rootfs and container layers are large compressed assets; first boot and prefix extraction are disk-heavy by design | app/src/main/assets, ImageFsInstaller, ContainerManager | Could affect first-run time, not steady-state FPS | Medium–high if packaging/install behavior changes | File-size analysis possible; device storage timing needed |
-| Process scans and telemetry allocation | HUD CPU sampler scans process entries every few seconds and uses temporary maps/lists for samples | widget/HudDataSource.java | Some monitoring overhead is possible; no proof it affects game pacing | Low–medium | Static inspection; runtime profiling needed |
+| Shader compilation stalls | GLSL is compiled on use; PostFX variants are cached in memory after compile. No hitch trace exists | renderer/shader.cpp, postfx.cpp, egl.cpp | First-use frame-time spikes are possible; not quantified | High if changing sync/cache behavior | Static/native build only |
+| GL/Vulkan wait path | Frame generation has a glFinish fallback when sync-file interoperability is unavailable; target path is unknown | renderer/frame_gen.cpp | Could add GPU/CPU wait overhead if active | High; fence changes risk corruption or hangs | Static/native build only |
+| Mali counter access | Native counters and sysfs fallbacks depend on SELinux/OEM access | mali_counters.cpp, MaliGpuCounters.java, HudDataSource.java | Affects metric availability, not proven game performance | High for device-specific ioctl changes | NO: target device needed |
+| Container/game startup I/O | Rootfs and prefix archives are large compressed assets | app assets, ImageFs installer, ContainerManager | Could affect first-run time, not necessarily steady FPS | Medium–high if packaging changes | Asset size measurable; target storage timing needed |
+| Telemetry process scans | HUD CPU sampling reads process information and temporary maps/lists | HudDataSource.java | Monitoring overhead is possible but unmeasured | Low–medium | Static inspection only |
 
-## GPU and rendering audit
+## Graphics audit
 
-- Default graphics driver remains Wrapper; no driver is automatically selected or replaced.
-- Adreno-only Turnip is not forced onto Mali.
-- Vulkan/OpenGL capability queries and fallback paths remain intact.
-- PostFX compiles effect shaders lazily and caches variants in memory. There is no evidence to justify adding another shader cache.
-- Frame generation is optional; its GL/Vulkan fence path has conditional synchronous fallbacks. No changes were made without target measurements.
-- BCn cache and format settings already exist per graphics configuration. No global cache deletion was added.
+- Default graphics driver remains Wrapper.
+- Adreno Turnip is not forced onto Mali.
+- No Vulkan extension is forced or assumed.
+- Existing OpenGL/Vulkan detection, fallbacks and BCn configuration are preserved.
+- Existing PostFX shader in-memory caching is reused; no disk shader cache was added.
+- Frame generation remains optional; no custom frame pacing was introduced.
+- Vulkan change only validates custom-driver initialization and adds system-loader fallback on incomplete custom setup.
 
-## Memory and package audit
+## Memory and package findings
 
-- Phase 1 repository tree had about 236 MiB of tracked blob contents; app assets accounted for about 223.3 MiB.
-- Largest tracked assets included container_pattern_common.tzst (~80.6 MiB) and wincomponents/direct3d.tzst (~29.8 MiB). These are runtime assets and were preserved.
-- Phase 1 Actions artifact archive was 446,623,228 bytes. This is the artifact ZIP size, not the exact APK file size.
-- Phase 2 CI adds APK inspection for actual APK bytes, native library bytes, asset compression and largest ZIP entries.
-- The app is already filtered to arm64-v8a; ABI splitting is not useful while only one ABI is configured.
+Latest successful APK inspection from run 45905407533:
 
-## Evidence-based changes
+- APK path: app/build/outputs/apk/standard/debug/app-standard-debug.apk
+- APK size: 447,763,096 bytes (about 427 MiB)
+- Package: com.winlator.mali
+- Version: 1.2.1 Bionic, versionCode 23
+- ZIP entries: 1,291
+- Native ABI: arm64-v8a only
+- Native libraries: 22, total 11,663,720 bytes uncompressed
+- Asset entries: 110
+- Asset bytes: 433,937,395 uncompressed; 432,187,879 compressed in APK
 
-1. Replace per-operation executors with shared pools whose idle workers time out.
-2. Serialize container directory create/duplicate/remove operations.
-3. Pause HUD telemetry when hidden and create its worker lazily.
-4. Pass full CPU affinity masks instead of discarding high bits.
-5. Extract thermal hysteresis into a pure helper with unit tests.
-6. Add APK package, ABI and resource inspection to CI.
+Largest entries include imagefs.tzst (199,788,880 bytes), container_pattern_common.tzst (84,522,663 bytes), wincomponents/direct3d.tzst (31,207,067 bytes), classes.dex (11,046,824 uncompressed), and adrenotools-v819.tzst (9,881,991 bytes).
 
-No driver, runtime archive, container data or upstream feature was removed.
+The package size is dominated by runtime assets rather than native ARM64 libraries. No runtime, driver, wrapper, game data, or source component was removed.
+
+## Verified build
+
+- Workflow: 45905407533
+- Source commit: 96401a1f4c9d44b780b060a501f953114167f14d
+- Overall: SUCCESS
+- Source validation: PASS
+- Unit-test task: PASS
+- Android lint: PASS
+- APK assemble: PASS
+- Native ARM64 compilation: PASS
+- APK metadata/ABI inspection: PASS
+- Artifact upload: PASS
+- Artifact: project-winlator-standard-debug-phase2, ID 15158325113
+- Artifact ZIP size: 446,628,332 bytes
+- Expiry: 2026-12-10 UTC
+- Run page: https://github.com/suisuisui-spec/Project-Winlator-/actions/runs/45905407533
+
+The native compiler no longer reports the sometimes-uninitialized Vulkan pointer warnings after the latest fix. Other upstream warnings remain, including unused JNI parameters and signed/unsigned comparisons.
+
+## Remaining risks
+
+- Actual Mali custom-driver fallback needs Helio G100 runtime testing.
+- Thermal callbacks and telemetry permissions are OEM/Android-version dependent.
+- CPU topology reads may be restricted; affinity remains opt-in.
+- The app is ARM64-only by Gradle ABI filter.
+- No controlled game benchmark was available; NO MEASURED IMPROVEMENT is claimed.

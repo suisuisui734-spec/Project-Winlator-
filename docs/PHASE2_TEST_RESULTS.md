@@ -1,28 +1,36 @@
 # Phase 2 Automated Test Results
 
-## Test scope
-
-Phase 2 adds pure unit tests for CPU affinity-mask formatting and thermal hysteresis. They do not require a physical Helio G100 sensor or GPU.
-
 ## Test cases added
 
-- CpuTopologyTest: core indices 0 and 8, index 31, null/negative/out-of-range indices, empty input.
-- ProcessHelperTest: verifies affinity formatting preserves bits above bit 7 and the highest int bit.
-- ThermalGuardStateTest: Moderate+ pauses optional hints; Light/None resumes; intermediate status preserves state; repeated transitions do not oscillate inside the warning band.
+- CpuTopologyTest (4 tests): mask for cores 0 and 8, core 31, null/invalid indices, empty input.
+- ProcessHelperTest (2 tests): hexadecimal mask preserves bits above bit 7 and the highest sign bit.
+- ThermalGuardStateTest (4 tests): Moderate+ pauses optional hints; Light/None resumes; unavailable status preserves state; transition sequence remains stable.
 
-## Results
+Total project-authored JUnit test methods added: 10.
 
-PENDING until the Phase 2 GitHub Actions workflow finishes. CI is configured to run:
-- bash scripts/validate-source.sh
-- :app:testStandardDebugUnitTest
-- :app:lintStandardDebug
-- :app:assembleStandardDebug (includes native arm64 compilation)
-- APK package/ABI/resource inspection and artifact upload
+## Verified GitHub Actions result
+
+- Workflow: 45905407533
+- Source commit: 96401a1f4c9d44b780b060a501f953114167f14d
+- Overall workflow: SUCCESS
+- :app:testStandardDebugUnitTest: PASS
+- :app:lintStandardDebug: PASS
+- :app:assembleStandardDebug: PASS
+- Native CMake/NDK build for arm64-v8a: PASS
+- APK metadata/ABI inspection: PASS
+- Artifact upload: PASS
+
+The unit-test task completed successfully with the ten added tests. These tests do not simulate Mali hardware counters or Android thermal sensor events.
 
 ## Device-only tests
 
-- Thermal callbacks against actual device state: NOT TESTED.
-- Mali telemetry permissions/counters: NOT TESTED.
-- Container launch/stop on Helio G100: NOT TESTED.
-- Game graphics regression: NOT TESTED.
-- FPS/frame-time/thermal benchmark: NOT TESTED.
+- Thermal callback on actual Helio G100 state: NOT TESTED.
+- Mali counter/sysfs permissions: NOT TESTED.
+- Container start/stop on Helio G100: NOT TESTED.
+- Wrapper/BCn game rendering regression: NOT TESTED.
+- FPS/frame-time/stutter/thermal benchmark: NOT TESTED.
+- Emulator gaming comparison: NOT TESTED.
+
+## Native warnings
+
+The latest native build no longer reports sometimes-uninitialized warnings for the Vulkan custom-driver path pointers addressed in Phase 2. Other upstream warnings remain, mainly unused JNI parameters and signed/unsigned comparisons in unrelated native functions.
