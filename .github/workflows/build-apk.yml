@@ -21,6 +21,7 @@ on:
       - feature/maliforge-gx-stage14-recovery
       - feature/maliforge-gx-stage15-diagnostics
       - feature/maliforge-gx-stage16-benchmark
+      - feature/maliforge-gx-stage17-control-center
   pull_request:
     branches:
       - main
@@ -170,7 +171,7 @@ jobs:
       - name: Upload APK and inspection report
         uses: actions/upload-artifact@v4
         with:
-          name: project-winlator-${{ env.FLAVOR }}-${{ env.BUILD_TYPE }}-phase16
+          name: project-winlator-${{ env.FLAVOR }}-${{ env.BUILD_TYPE }}-phase17
           path: |
             app/build/outputs/apk/**/*.apk
             phase2-artifacts/*
