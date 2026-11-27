@@ -33,6 +33,17 @@ public class PEArchitectureParserTest {
     }
 
     @Test
+    public void extractsImportedDllNamesThroughSectionRvaMapping() throws Exception {
+        File file = createPeWithD3d11Import();
+        try {
+            PEArchitectureParser.Result result = PEArchitectureParser.parse(file);
+            assertEquals(java.util.Collections.singletonList("d3d11.dll"), result.importedLibraries);
+        } finally {
+            Files.deleteIfExists(file.toPath());
+        }
+    }
+
+    @Test
     public void rejectsFilesWithoutDosSignature() throws Exception {
         File file = Files.createTempFile("not-pe", ".bin").toFile();
         try {
@@ -46,6 +57,44 @@ public class PEArchitectureParserTest {
         } finally {
             Files.deleteIfExists(file.toPath());
         }
+    }
+
+    private static File createPeWithD3d11Import() throws Exception {
+        File file = Files.createTempFile("pe-import", ".exe").toFile();
+        byte[] data = new byte[0x400];
+        data[0] = 'M';
+        data[1] = 'Z';
+        put32(data, 0x3c, 0x80);
+        data[0x80] = 'P';
+        data[0x81] = 'E';
+        put16(data, 0x84, 0x8664);
+        put16(data, 0x86, 1);
+        put16(data, 0x94, 240);
+        put16(data, 0x96, 0x0002);
+
+        int optional = 0x98;
+        put16(data, optional, 0x20b);
+        put32(data, optional + 60, 0x200);
+        put32(data, optional + 108, 16);
+        put32(data, optional + 120, 0x1000);
+        put32(data, optional + 124, 40);
+
+        int section = optional + 240;
+        put32(data, section + 8, 0x200);
+        put32(data, section + 12, 0x1000);
+        put32(data, section + 16, 0x200);
+        put32(data, section + 20, 0x200);
+
+        put32(data, 0x200, 0x1040);
+        put32(data, 0x20c, 0x1050);
+        put32(data, 0x210, 0x1040);
+        byte[] dllName = "d3d11.dll".getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+        System.arraycopy(dllName, 0, data, 0x250, dllName.length);
+        data[0x250 + dllName.length] = 0;
+        try (RandomAccessFile output = new RandomAccessFile(file, "rw")) {
+            output.write(data);
+        }
+        return file;
     }
 
     private static File createMinimalPe(int machine, int optionalMagic) throws Exception {
