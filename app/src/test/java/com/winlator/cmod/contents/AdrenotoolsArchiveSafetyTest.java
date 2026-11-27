@@ -51,6 +51,8 @@ public class AdrenotoolsArchiveSafetyTest {
         header[3] = 'F';
         header[4] = 2;
         header[5] = 1;
+        header[16] = 3; // ET_DYN shared object
+        header[17] = 0;
         header[18] = (byte) 0xb7;
         header[19] = 0;
         assertTrue(AdrenotoolsArchiveSafety.isElf64Aarch64(header));
@@ -59,6 +61,9 @@ public class AdrenotoolsArchiveSafetyTest {
         assertFalse(AdrenotoolsArchiveSafety.isElf64Aarch64(header));
         header[18] = (byte) 0xb7;
         header[4] = 1; // ELF32
+        assertFalse(AdrenotoolsArchiveSafety.isElf64Aarch64(header));
+        header[4] = 2;
+        header[16] = 2; // ET_EXEC, not a shared library
         assertFalse(AdrenotoolsArchiveSafety.isElf64Aarch64(header));
     }
 
