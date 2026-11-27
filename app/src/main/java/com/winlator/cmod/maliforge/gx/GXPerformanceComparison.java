@@ -11,6 +11,9 @@ public final class GXPerformanceComparison {
 
     public Result compare(Session before, Session after) {
         if (before == null || after == null) return Result.invalid("Both baseline and after sessions are required.");
+        if (before.source == null || after.source == null) {
+            return Result.invalid("Measurement source is unknown.");
+        }
         if (before.source == Source.SYNTHETIC || after.source == Source.SYNTHETIC) {
             return Result.invalid("Synthetic data cannot be presented as measured game or software-GPU performance.");
         }
