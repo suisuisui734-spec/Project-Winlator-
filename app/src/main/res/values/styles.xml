@@ -17,17 +17,17 @@
         <item name="popupMenuStyle">@style/PopupMenu</item>
 
         <item name="gamingSurfaceColor">@color/gaming_surface_light</item>
-        <item name="gamingCardSubtitleColor">#b3000000</item>
-        <item name="gamingPopupColor">#f2eceff1</item>
-        <item name="gamingToolbarColor">@color/colorPrimary</item>
+        <item name="gamingCardSubtitleColor">#990D2238</item>
+        <item name="gamingPopupColor">#f2eaf0f6</item>
+        <item name="gamingToolbarColor">#142338</item>
 
-        <item name="semanticSurface">#ffffff</item>
-        <item name="semanticOnSurface">#121212</item>
-        <item name="semanticSurfaceVariant">#f0f0f0</item>
-        <item name="semanticOnSurfaceVariant">#424242</item>
-        <item name="semanticDivider">#e0e0e0</item>
-        <item name="semanticAccentDim">#b30288d1</item>
-        <item name="semanticSurfaceContainer">#f8f9fa</item>
+        <item name="semanticSurface">#F4F7FA</item>
+        <item name="semanticOnSurface">#0D1724</item>
+        <item name="semanticSurfaceVariant">#E4ECF4</item>
+        <item name="semanticOnSurfaceVariant">#33485E</item>
+        <item name="semanticDivider">#CCD8E4</item>
+        <item name="semanticAccentDim">#66009BD6</item>
+        <item name="semanticSurfaceContainer">#EAF0F6</item>
         <item name="tabStyle">@style/CustomTabLayout.Light</item>
     </style>
 
@@ -50,16 +50,16 @@
         <item name="gamingSurfaceColor">@color/gaming_surface_dark</item>
         <item name="gamingCardSubtitleColor">#b3ffffff</item>
         <item name="tabStyle">@style/CustomTabLayout.Dark</item>
-        <item name="gamingPopupColor">#f2263238</item>
-        <item name="gamingToolbarColor">@color/colorPrimaryDarkMode</item>
+        <item name="gamingPopupColor">#F2182638</item>
+        <item name="gamingToolbarColor">#111C2C</item>
 
-        <item name="semanticSurface">#1e1e1e</item>
-        <item name="semanticOnSurface">#e0e0e0</item>
-        <item name="semanticSurfaceVariant">#2a2a2a</item>
-        <item name="semanticOnSurfaceVariant">#aaaaaa</item>
-        <item name="semanticDivider">#383838</item>
-        <item name="semanticAccentDim">#4080d8ff</item>
-        <item name="semanticSurfaceContainer">#252525</item>
+        <item name="semanticSurface">#101827</item>
+        <item name="semanticOnSurface">#EAF2FA</item>
+        <item name="semanticSurfaceVariant">#18263A</item>
+        <item name="semanticOnSurfaceVariant">#A6B8CC</item>
+        <item name="semanticDivider">#26384E</item>
+        <item name="semanticAccentDim">#4039D8FF</item>
+        <item name="semanticSurfaceContainer">#142034</item>
     </style>
 
     <!-- Light Theme Fullscreen -->
