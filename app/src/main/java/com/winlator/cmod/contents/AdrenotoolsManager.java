@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.zip.ZipEntry;
@@ -276,11 +275,9 @@ public class AdrenotoolsManager {
                 throw new IOException("A driver with this name is already installed. Remove the old entry first.");
             }
 
-            try {
-                Files.move(tmpDir.toPath(), destination.toPath(), StandardCopyOption.ATOMIC_MOVE);
-            } catch (AtomicMoveNotSupportedException ignored) {
-                Files.move(tmpDir.toPath(), destination.toPath());
-            }
+            // Move within the same private filesystem. Omitting REPLACE_EXISTING ensures
+            // a concurrent or pre-existing driver directory cannot be silently overwritten.
+            Files.move(tmpDir.toPath(), destination.toPath());
 
             installed = true;
             installedName = driverName;
