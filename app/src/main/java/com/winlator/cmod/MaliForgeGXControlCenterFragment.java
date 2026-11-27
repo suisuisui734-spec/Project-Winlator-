@@ -3,7 +3,9 @@ package com.winlator.cmod;
 import android.content.Context;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Process;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,6 +25,8 @@ import com.winlator.cmod.maliforge.gx.GXEngineReport;
 import com.winlator.cmod.maliforge.gx.GXNativeRuntime;
 import com.winlator.cmod.maliforge.gx.GXRuntimeDiagnostics;
 import com.winlator.cmod.maliforge.gx.MaliForgeGXEngine;
+
+import java.util.Locale;
 
 /**
  * Read-only MaliForge GX status page.
@@ -114,12 +118,25 @@ public final class MaliForgeGXControlCenterFragment extends Fragment {
             }
 
             GXNativeRuntime.Snapshot nativeRuntime = diagnostics.getNativeRuntime();
-            addSection(context, "GPU and Vulkan",
-                    "GPU renderer: " + safe(report.getCapabilities().getRenderer()) + "\n"
+            addSection(context, "GPU and Vulkan (Android host)",
+                    "Physical-device name: " + safe(report.getCapabilities().getRenderer()) + "\n"
+                    + "Vulkan vendor ID: " + formatVendorId(report.getCapabilities().getVendorId()) + "\n"
                     + "Mali GPU detected: " + report.getCapabilities().isMali() + "\n"
-                    + "Vulkan version: " + safe(report.getCapabilities().getVulkanVersion()) + "\n"
-                    + "Vulkan extensions observed: " + report.getCapabilities().getExtensionCount() + "\n"
-                    + "Capability probe: " + report.getCapabilities().getStatus());
+                    + "Vulkan device API version: " + safe(report.getCapabilities().getVulkanVersion()) + "\n"
+                    + "VK_KHR_swapchain: " + observed(report.getCapabilities().hasSwapchainExtension()) + "\n"
+                    + "VK_KHR_synchronization2: " + observed(report.getCapabilities().hasSynchronization2Extension()) + "\n"
+                    + "Device extensions observed: " + report.getCapabilities().getExtensionCount() + "\n"
+                    + "Capability probe: " + report.getCapabilities().getStatus()
+                    + "\n\nThese values come from the Android system Vulkan physical-device probe, not from a Wine game's renderer.");
+
+            addSection(context, "Android device and process",
+                    "Manufacturer / model: " + safe(Build.MANUFACTURER) + " / " + safe(Build.MODEL) + "\n"
+                    + "Hardware identifier: " + safe(Build.HARDWARE) + "\n"
+                    + "Android release: " + safe(Build.VERSION.RELEASE) + " (API " + Build.VERSION.SDK_INT + ")\n"
+                    + "Application process: " + (Process.is64Bit() ? "64-bit" : "32-bit") + "\n"
+                    + "System-supported ABIs: " + String.join(", ", Build.SUPPORTED_ABIS)
+                    + (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+                            ? "\nSoC model reported by Android: " + safe(Build.SOC_MODEL) : ""));
 
             addSection(context, "Native ARM64 support bridge",
                     "Bridge state: " + nativeRuntime.getStateName() + "\n"
@@ -202,6 +219,14 @@ public final class MaliForgeGXControlCenterFragment extends Fragment {
 
     private static String safe(String value) {
         return value == null || value.trim().isEmpty() ? "Unavailable" : value;
+    }
+
+    private static String observed(boolean available) {
+        return available ? "Detected" : "Not detected";
+    }
+
+    private static String formatVendorId(int vendorId) {
+        return vendorId == 0 ? "Unavailable" : String.format(Locale.ROOT, "0x%04X", vendorId);
     }
 
     private static int dp(Context context, int value) {

@@ -9,6 +9,9 @@ public final class GXCapabilityReport {
     private final String renderer;
     private final String vulkanVersion;
     private final int extensionCount;
+    private final int vendorId;
+    private final boolean hasSwapchainExtension;
+    private final boolean hasSynchronization2Extension;
     private final boolean mali;
     private final boolean vulkanVersionAvailable;
     private final boolean dxvkBaseline;
@@ -19,6 +22,9 @@ public final class GXCapabilityReport {
         renderer = capabilities.getRenderer();
         vulkanVersion = capabilities.getVulkanVersion();
         extensionCount = capabilities.getExtensionCount();
+        vendorId = capabilities.getVendorId();
+        hasSwapchainExtension = capabilities.hasExtension("VK_KHR_swapchain");
+        hasSynchronization2Extension = capabilities.hasExtension("VK_KHR_synchronization2");
         mali = capabilities.isMali();
         vulkanVersionAvailable = capabilities.hasVulkanVersion();
         dxvkBaseline = capabilities.supportsDxvkBaseline();
@@ -40,6 +46,9 @@ public final class GXCapabilityReport {
     public String getRenderer() { return renderer; }
     public String getVulkanVersion() { return vulkanVersion; }
     public int getExtensionCount() { return extensionCount; }
+    public int getVendorId() { return vendorId; }
+    public boolean hasSwapchainExtension() { return hasSwapchainExtension; }
+    public boolean hasSynchronization2Extension() { return hasSynchronization2Extension; }
     public boolean isMali() { return mali; }
     public boolean hasVulkanVersion() { return vulkanVersionAvailable; }
     public boolean supportsDxvkBaseline() { return dxvkBaseline; }

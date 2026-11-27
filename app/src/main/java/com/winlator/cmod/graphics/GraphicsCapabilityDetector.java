@@ -11,13 +11,15 @@ public final class GraphicsCapabilityDetector {
     public static GraphicsCapabilities detect(Context context) {
         String renderer = "";
         String version = "";
+        int vendorId = 0;
         String[] extensions = new String[0];
         try { renderer = GPUInformation.getRenderer(null, context); } catch (Throwable ignored) {}
         try { version = GPUInformation.getVulkanVersion(null, context); } catch (Throwable ignored) {}
+        try { vendorId = GPUInformation.getVendorID(null, context); } catch (Throwable ignored) {}
         try {
             String[] result = GPUInformation.enumerateExtensions(null, context);
             if (result != null) extensions = result;
         } catch (Throwable ignored) {}
-        return new GraphicsCapabilities(renderer, version, extensions);
+        return new GraphicsCapabilities(renderer, version, vendorId, extensions);
     }
 }
