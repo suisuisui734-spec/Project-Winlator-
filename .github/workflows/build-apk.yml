@@ -10,6 +10,7 @@ on:
       - feature/maliforge-gx-stage3-backend-integration
       - feature/maliforge-gx-stage4-real-graphics-runtime
       - feature/maliforge-gx-stage05-shader-lab
+      - feature/maliforge-gx-stage06-framepacing
   pull_request:
     branches:
       - main
@@ -17,6 +18,7 @@ on:
       - feature/maliforge-gx-stage3-backend-integration
       - feature/maliforge-gx-stage4-real-graphics-runtime
       - feature/maliforge-gx-stage05-shader-lab
+      - feature/maliforge-gx-stage06-framepacing
   workflow_dispatch:
     inputs:
       flavor:
@@ -153,7 +155,7 @@ jobs:
       - name: Upload APK and inspection report
         uses: actions/upload-artifact@v4
         with:
-          name: project-winlator-${{ env.FLAVOR }}-${{ env.BUILD_TYPE }}-phase5
+          name: project-winlator-${{ env.FLAVOR }}-${{ env.BUILD_TYPE }}-phase6
           path: |
             app/build/outputs/apk/**/*.apk
             phase2-artifacts/*
