@@ -154,3 +154,31 @@ The green hosted CI proves the tested software build path and Mesa llvmpipe diag
 layer path. It does not verify Mali hardware, Android Winlator guest runtime, actual game
 rendering hooks, live frame-time collection, completed Control Center UI, or real gamepad
 event routing. Performance metrics remain NOT MEASURED.
+
+
+## Repository integration update — 2026-11-27 (after PR #29 and PR #30)
+
+The cumulative MaliForge GX implementation and the read-only Control Center are now merged into
+`main`. This does **not** mean all 23 stage models are a production game renderer.
+
+- PR #29 merged the cumulative Stage 2–23 integration at merge commit
+  `86704a8fc1b5c81e4479791e02be4d8fd7287695`.
+- PR #30 merged the read-only Control Center UI at commit
+  `0ca14650fe6371f8387bf7b6fb8c21d504d72070`.
+- The Control Center is accessible from the app navigation and displays GPU/Vulkan capability
+  probes, native bridge status, advisory backend planning, and explicit renderer/telemetry
+  availability. It is read-only and does not switch or replace graphics drivers.
+- The guest Vulkan layer is opt-in diagnostic pass-through for Linux x86_64 guest processes.
+  Software Vulkan smoke tests passed; this is not an Android Mali Vulkan ICD or game renderer.
+- PR #31 (`Enable full APK CI validation on main`) adds `main` to push-trigger coverage and
+  requires main in the CI coverage validator. At audit update time, run
+  `46015590280` was still executing unit tests/lint; APK build and package checks had not yet
+  completed. Do not mark this PR verified until its full run concludes successfully.
+- Helio G100 / Mali-G57 MC2 device testing and game FPS/frame-time measurements remain
+  **NOT TESTED / NOT MEASURED**. No performance increase is claimed.
+- Existing Wrapper, Wrapper-1.1, Wrapper-v2, Wrapper-leegao, Wrapper-gamenative, DXVK,
+  VKD3D, WineD3D, driver packages, game saves and caches are not replaced by these merges.
+
+Next release gate: full main-branch CI pass, followed by target-device testing and evidence-based
+renderer/telemetry integration. Do not expose MaliForge GX as a selectable graphics driver until
+a functional backend/ICD or renderer is implemented and validated.
