@@ -60,6 +60,8 @@ import com.winlator.cmod.core.StringUtils;
 import com.winlator.cmod.core.WineInfo;
 import com.winlator.cmod.core.WineRegistryEditor;
 import com.winlator.cmod.core.WineThemeManager;
+import com.winlator.cmod.graphics.GraphicsCapabilityDetector;
+import com.winlator.cmod.maliforge.gx.GXGraphicsDriverAvailability;
 import com.winlator.cmod.fexcore.FEXCoreManager;
 import com.winlator.cmod.fexcore.FEXCorePreset;
 import com.winlator.cmod.fexcore.FEXCorePresetManager;
@@ -339,6 +341,9 @@ public class ContainerDetailFragment extends Fragment {
                 isEditMode() ? container.getGraphicsDriver() : Container.DEFAULT_GRAPHICS_DRIVER,
                 isEditMode() ? container.getDXWrapper() : Container.DEFAULT_DXWRAPPER, null);
 
+        TextView tvMaliForgeGXAvailability = view.findViewById(R.id.TVMaliForgeGXAvailability);
+        updateMaliForgeGXAvailability(context, tvMaliForgeGXAvailability);
+
         view.findViewById(R.id.BTHelpDXWrapper).setOnClickListener((v) -> AppUtils.showHelpBox(context, v, R.string.dxwrapper_help_content));
 
         final View vBCNConfig = view.findViewById(R.id.BTBCNConfig);
@@ -503,8 +508,7 @@ public class ContainerDetailFragment extends Fragment {
         });
 
         String selectedDriver = sGraphicsDriver.getSelectedItem().toString();
-        List<String> sGraphicsItemsList = new ArrayList<>(Arrays.asList(context.getResources().getStringArray(R.array.graphics_driver_entries)));
-        sGraphicsDriver.setAdapter(new ArrayAdapter<>(context, android.R.layout.simple_spinner_dropdown_item, sGraphicsItemsList));
+        updateGraphicsDriverSpinner(context, sGraphicsDriver);
         AppUtils.setSpinnerSelectionFromValue(sGraphicsDriver, selectedDriver);
 
 
@@ -1100,9 +1104,61 @@ public class ContainerDetailFragment extends Fragment {
     public static void updateGraphicsDriverSpinner(Context context, Spinner spinner) {
         String[] originalItems = context.getResources().getStringArray(R.array.graphics_driver_entries);
         List<String> itemList = new ArrayList<>(Arrays.asList(originalItems));
-        
-        // Set the adapter with the combined list
-        spinner.setAdapter(new ArrayAdapter<>(context, android.R.layout.simple_spinner_dropdown_item, itemList));
+        GXGraphicsDriverAvailability availability = GXGraphicsDriverAvailability.inspect(
+                GraphicsCapabilityDetector.detect(context),
+                Container.isSupportedGraphicsDriver(GXGraphicsDriverAvailability.DRIVER_ID));
+        int unavailablePosition = itemList.size();
+        itemList.add(availability.getDropdownLabel());
+        spinner.setAdapter(new GraphicsDriverArrayAdapter(
+                context, itemList, unavailablePosition, availability.isSelectable()));
+    }
+
+    private static void updateMaliForgeGXAvailability(Context context, TextView statusView) {
+        if (statusView == null) return;
+        GXGraphicsDriverAvailability availability = GXGraphicsDriverAvailability.inspect(
+                GraphicsCapabilityDetector.detect(context),
+                Container.isSupportedGraphicsDriver(GXGraphicsDriverAvailability.DRIVER_ID));
+        String hostGpu = availability.isMaliDeviceDetected()
+                ? "Android host probe: Mali GPU detected"
+                : "Android host probe: Mali GPU not detected";
+        statusView.setText("MaliForge GX — " + availability.getStatusLabel()
+                + " · " + availability.getVersion()
+                + "\n" + hostGpu
+                + "\n" + availability.getDetail()
+                + "\nInformational entry only; it cannot be selected or saved as a container driver.");
+        statusView.setContentDescription(statusView.getText());
+    }
+
+    private static final class GraphicsDriverArrayAdapter extends ArrayAdapter<String> {
+        private final int gxPosition;
+        private final boolean gxSelectable;
+
+        GraphicsDriverArrayAdapter(Context context, List<String> items, int gxPosition,
+                                   boolean gxSelectable) {
+            super(context, android.R.layout.simple_spinner_dropdown_item, items);
+            this.gxPosition = gxPosition;
+            this.gxSelectable = gxSelectable;
+        }
+
+        @Override
+        public boolean areAllItemsEnabled() {
+            return false;
+        }
+
+        @Override
+        public boolean isEnabled(int position) {
+            return position != gxPosition ? super.isEnabled(position)
+                    : gxSelectable && super.isEnabled(position);
+        }
+
+        @Override
+        public View getDropDownView(int position, View convertView, ViewGroup parent) {
+            View row = super.getDropDownView(position, convertView, parent);
+            boolean enabled = isEnabled(position);
+            row.setEnabled(enabled);
+            row.setAlpha(enabled ? 1.0f : 0.55f);
+            return row;
+        }
     }
 
     // x86_64 Wine runs entirely under Box64. arm64ec Wine runs x86 code with FEXCore; WOWBox64 is only an
