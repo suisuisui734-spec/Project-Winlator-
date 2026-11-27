@@ -13,6 +13,8 @@ on:
       - feature/maliforge-gx-stage06-framepacing
       - feature/maliforge-gx-stage07-performance
       - feature/maliforge-gx-stage08-adaptive
+      - feature/maliforge-gx-stage09-resolution
+      - feature/maliforge-gx-stage10-memory
   pull_request:
     branches:
       - main
@@ -23,6 +25,8 @@ on:
       - feature/maliforge-gx-stage06-framepacing
       - feature/maliforge-gx-stage07-performance
       - feature/maliforge-gx-stage08-adaptive
+      - feature/maliforge-gx-stage09-resolution
+      - feature/maliforge-gx-stage10-memory
   workflow_dispatch:
     inputs:
       flavor:
@@ -159,7 +163,7 @@ jobs:
       - name: Upload APK and inspection report
         uses: actions/upload-artifact@v4
         with:
-          name: project-winlator-${{ env.FLAVOR }}-${{ env.BUILD_TYPE }}-phase8
+          name: project-winlator-${{ env.FLAVOR }}-${{ env.BUILD_TYPE }}-phase10
           path: |
             app/build/outputs/apk/**/*.apk
             phase2-artifacts/*
