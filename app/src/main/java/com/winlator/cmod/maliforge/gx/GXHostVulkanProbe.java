@@ -36,13 +36,15 @@ public final class GXHostVulkanProbe {
                     devices.add(parseDevice(element.getAsJsonObject()));
                 }
             }
-            boolean available = "available".equals(status) && !devices.isEmpty();
+            boolean available = "available".equals(status) && reportedCount > 0
+                    && reportedCount == devices.size();
             String detail = available
                     ? "Android host Vulkan instance created; physical-device metadata enumerated."
                     : stringValue(root, "detail", "No Vulkan physical device was verified.");
-            if ("available".equals(status) && devices.isEmpty()) {
+            if ("available".equals(status) && !available) {
                 status = "invalid_response";
-                detail = "Probe reported success without any device records.";
+                detail = "Probe reported success, but the device count did not match the returned device records.";
+                devices.clear();
             }
             return new Result(available, status, stage, vkResult, reportedCount, detail, devices);
         } catch (RuntimeException exception) {
@@ -159,6 +161,7 @@ public final class GXHostVulkanProbe {
                         .append(" / 0x")
                         .append(String.format(java.util.Locale.ROOT, "%04X", device.deviceId)).append('\n')
                         .append("Device API: ").append(device.apiVersion).append('\n')
+                        .append("Driver version: ").append(device.driverVersion).append('\n')
                         .append("Type: ").append(device.deviceType).append('\n')
                         .append("Queues (graphics / compute / transfer): ")
                         .append(device.graphicsQueue).append(" / ")
