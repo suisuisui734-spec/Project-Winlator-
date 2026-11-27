@@ -5,6 +5,9 @@ import android.content.Context;
 import android.os.Build;
 import android.os.PowerManager;
 
+import com.winlator.cmod.graphics.GraphicsCapabilities;
+import com.winlator.cmod.graphics.GraphicsCapabilityDetector;
+
 import java.util.Locale;
 
 /**
@@ -29,17 +32,13 @@ public final class DeviceProfileInfo {
         summary.append("\nSupported ABIs: ").append(joinAbis());
         summary.append("\nARM64: ").append(supportsArm64() ? "supported" : "not reported");
 
-        String renderer = "Not exposed by the system renderer";
-        try {
-            String detected = GPUInformation.getRenderer(null, context);
-            if (detected != null && !detected.trim().isEmpty()
-                    && !detected.toLowerCase(Locale.ROOT).contains("unknown")) {
-                renderer = detected.trim();
-            }
-        } catch (Throwable ignored) {
-            // Keep this diagnostics page usable when a native/EGL renderer query is unavailable.
-        }
+        GraphicsCapabilities graphics = GraphicsCapabilityDetector.detect(context);
+        String renderer = graphics.getRenderer();
         summary.append("\nSystem GPU renderer: ").append(renderer);
+        summary.append("\nSystem Vulkan: ").append(graphics.getVulkanVersion());
+        summary.append("\nVulkan swapchain: ").append(graphics.hasExtension("VK_KHR_swapchain")
+                ? "available" : "not reported");
+        summary.append("\nVulkan extensions reported: ").append(graphics.getExtensionCount());
 
         ActivityManager activityManager =
                 (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
@@ -67,10 +66,13 @@ public final class DeviceProfileInfo {
             summary.append("\nThermal API: unavailable (Android 10+ required)");
         }
 
-        if (renderer.toLowerCase(Locale.ROOT).contains("mali")) {
-            summary.append("\nMali baseline: use the existing Wrapper driver with BCn ASTC or ETC2; do not select Adreno Turnip.");
+        if (graphics.isMali()) {
+            summary.append("\nMali baseline: ").append(graphics.supportsDxvkBaseline()
+                    ? "DXVK minimum Vulkan baseline detected; per-game compatibility still needs validation."
+                    : "WineD3D/OpenGL fallback recommended unless a per-game Vulkan check passes.");
+            summary.append("\nMali driver policy: do not select Adreno-only Turnip.");
         } else {
-            summary.append("\nGraphics profile: no automatic driver changes applied; keep the current compatible driver.");
+            summary.append("\nGraphics profile: capability recommendations only; no driver is installed or replaced.");
         }
         return summary.toString();
     }
