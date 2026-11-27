@@ -2,16 +2,16 @@
 <resources>
     <!-- Light Theme Colors -->
     <color name="window_background_color">#fafafa</color>
-    <color name="colorPrimary">#607d8b</color>
-    <color name="colorPrimaryDark">#455a64</color>
-    <color name="colorAccent">#0288d1</color>
+    <color name="colorPrimary">#142338</color>
+    <color name="colorPrimaryDark">#08111D</color>
+    <color name="colorAccent">#009BD6</color>
     <color name="black">#000000</color>
 
     <!-- Dark Theme Colors -->
     <color name="window_background_color_dark">#121212</color>
-    <color name="colorPrimaryDarkMode">#37474f</color>
-    <color name="colorPrimaryDarkModeDark">#263238</color>
-    <color name="colorAccentDark">#80d8ff</color>
+    <color name="colorPrimaryDarkMode">#111C2C</color>
+    <color name="colorPrimaryDarkModeDark">#070B12</color>
+    <color name="colorAccentDark">#39D8FF</color>
 
     <!-- Additional Colors for Dark Mode -->
     <color name="combo_box_dark">#303030</color>
@@ -137,8 +137,8 @@
     <color name="white">#ffffffff</color>
     <color name="gaming_primary">#ff102840</color>
     <color name="gaming_accent">#ff0d47a1</color>
-    <color name="gaming_surface_light">#fff5f5f5</color>
-    <color name="gaming_surface_dark">#1a102840</color>
+    <color name="gaming_surface_light">#fff0f3f7</color>
+    <color name="gaming_surface_dark">#FF111C2C</color>
     <color name="gaming_card_gradient_start">#00000000</color>
     <color name="gaming_card_gradient_end">#b3000000</color>
 </resources>
