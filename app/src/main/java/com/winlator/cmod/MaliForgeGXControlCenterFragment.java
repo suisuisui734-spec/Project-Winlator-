@@ -162,6 +162,37 @@ public final class MaliForgeGXControlCenterFragment extends Fragment {
         imageTestParams.topMargin = dp(context, 4);
         root.addView(runVulkanImageTest, imageTestParams);
 
+        Button runVulkanRenderPassTest = new Button(context);
+        runVulkanRenderPassTest.setText("Run Vulkan render-pass attachment test");
+        runVulkanRenderPassTest.setOnClickListener(v -> {
+            runVulkanRenderPassTest.setEnabled(false);
+            Toast.makeText(context, "Running Android host Vulkan render-pass test...",
+                    Toast.LENGTH_SHORT).show();
+            Handler mainHandler = new Handler(Looper.getMainLooper());
+            new Thread(() -> {
+                GXVulkanRenderPassTest.Result result = GXVulkanRenderPassTest.run();
+                mainHandler.post(() -> {
+                    runVulkanRenderPassTest.setEnabled(true);
+                    if (!isAdded() || sections == null) return;
+                    Context activeContext = getContext();
+                    if (activeContext == null) return;
+                    addSection(activeContext, "Vulkan offscreen render-pass attachment test",
+                            result.toDiagnosticText()
+                            + "\n\nThis Android-host test creates a color attachment, image view, render pass, "
+                            + "and framebuffer, executes vkCmdClearAttachments on the graphics queue, then "
+                            + "verifies copied pixels. It does not use shaders, a game surface, swapchain, "
+                            + "Wine guest, or game renderer.");
+                    Toast.makeText(activeContext,
+                            result.ready ? "Vulkan render-pass test passed"
+                                    : "Vulkan render-pass test not verified: " + result.status,
+                            Toast.LENGTH_LONG).show();
+                });
+            }, "MaliForge-GX-RenderPass-Test").start();
+        });
+        LinearLayout.LayoutParams renderPassTestParams = matchWrap();
+        renderPassTestParams.topMargin = dp(context, 4);
+        root.addView(runVulkanRenderPassTest, renderPassTestParams);
+
         LinearLayout reportActions = new LinearLayout(context);
         reportActions.setOrientation(LinearLayout.HORIZONTAL);
         Button shareReport = new Button(context);

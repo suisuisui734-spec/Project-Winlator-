@@ -33,6 +33,9 @@ final class GXNativeBridge {
     static String runVulkanImageClearTest() {
         return LOADED ? safe(nativeRunVulkanImageClearTest()) : "";
     }
+    static String runVulkanRenderPassTest() {
+        return LOADED ? safe(nativeRunVulkanRenderPassTest()) : "";
+    }
     static void shutdown() { if (LOADED) nativeShutdown(); }
     private static String safe(String value) {
         return value == null || value.trim().isEmpty() ? "Unavailable" : value;
@@ -48,5 +51,6 @@ final class GXNativeBridge {
     private static native void nativeShutdownHostVulkanDevice();
     private static native String nativeRunVulkanCommandTransferTest();
     private static native String nativeRunVulkanImageClearTest();
+    private static native String nativeRunVulkanRenderPassTest();
     private static native void nativeShutdown();
 }
