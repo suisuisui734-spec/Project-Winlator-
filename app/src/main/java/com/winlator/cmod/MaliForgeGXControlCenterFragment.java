@@ -32,6 +32,7 @@ import com.winlator.cmod.maliforge.gx.GXGraphicsDriverAvailability;
 import com.winlator.cmod.maliforge.gx.GXNativeRuntime;
 import com.winlator.cmod.maliforge.gx.GXVulkanDeviceBootstrap;
 import com.winlator.cmod.maliforge.gx.GXVulkanCommandTransferTest;
+import com.winlator.cmod.maliforge.gx.GXVulkanImageClearTest;
 import com.winlator.cmod.maliforge.gx.GXRuntimeDiagnostics;
 import com.winlator.cmod.maliforge.gx.MaliForgeGXEngine;
 
@@ -130,6 +131,36 @@ public final class MaliForgeGXControlCenterFragment extends Fragment {
         LinearLayout.LayoutParams commandTestParams = matchWrap();
         commandTestParams.topMargin = dp(context, 4);
         root.addView(runVulkanCommandTest, commandTestParams);
+
+        Button runVulkanImageTest = new Button(context);
+        runVulkanImageTest.setText("Run Vulkan image clear/readback test");
+        runVulkanImageTest.setOnClickListener(v -> {
+            runVulkanImageTest.setEnabled(false);
+            Toast.makeText(context, "Running Android host Vulkan image test...",
+                    Toast.LENGTH_SHORT).show();
+            Handler mainHandler = new Handler(Looper.getMainLooper());
+            new Thread(() -> {
+                GXVulkanImageClearTest.Result result = GXVulkanImageClearTest.run();
+                mainHandler.post(() -> {
+                    runVulkanImageTest.setEnabled(true);
+                    if (!isAdded() || sections == null) return;
+                    Context activeContext = getContext();
+                    if (activeContext == null) return;
+                    addSection(activeContext, "Vulkan offscreen image clear/read-back test",
+                            result.toDiagnosticText()
+                            + "\n\nThis test allocates and clears an Android host Vulkan image, "
+                            + "then copies and verifies its pixels. It does not use a shader, graphics "
+                            + "pipeline, surface, swapchain, or Wine game renderer.");
+                    Toast.makeText(activeContext,
+                            result.ready ? "Vulkan image test passed"
+                                    : "Vulkan image test not verified: " + result.status,
+                            Toast.LENGTH_LONG).show();
+                });
+            }, "MaliForge-GX-Vulkan-Image-Test").start();
+        });
+        LinearLayout.LayoutParams imageTestParams = matchWrap();
+        imageTestParams.topMargin = dp(context, 4);
+        root.addView(runVulkanImageTest, imageTestParams);
 
         LinearLayout reportActions = new LinearLayout(context);
         reportActions.setOrientation(LinearLayout.HORIZONTAL);
