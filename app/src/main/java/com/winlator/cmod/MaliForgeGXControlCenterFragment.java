@@ -22,6 +22,7 @@ import androidx.fragment.app.Fragment;
 import com.winlator.cmod.execution.DependencyDetector;
 import com.winlator.cmod.maliforge.gx.GXBackendSelector;
 import com.winlator.cmod.maliforge.gx.GXEngineReport;
+import com.winlator.cmod.maliforge.gx.GXGraphicsDriverAvailability;
 import com.winlator.cmod.maliforge.gx.GXNativeRuntime;
 import com.winlator.cmod.maliforge.gx.GXRuntimeDiagnostics;
 import com.winlator.cmod.maliforge.gx.MaliForgeGXEngine;
@@ -166,10 +167,19 @@ public final class MaliForgeGXControlCenterFragment extends Fragment {
             addSection(context, "Backend planning (advisory only)", selectionText
                     + "\n\nThis planner does not change container settings or switch your selected wrapper.");
 
-            addSection(context, "MaliForge game renderer",
-                    "NOT AVAILABLE — no MaliForge Vulkan ICD or game-renderer hook is installed.\n\n"
-                    + "MaliForge GX therefore does not appear as a selectable Graphics Driver. "
-                    + "Keep using the existing Wrapper / DXVK / VKD3D / WineD3D path that works for your game.");
+            GXGraphicsDriverAvailability gxDriver = GXGraphicsDriverAvailability.inspect(null);
+            addSection(context, "MaliForge GX Graphics Driver lifecycle",
+                    "Registry ID: " + gxDriver.getDriverId() + "\n"
+                    + "Version: " + gxDriver.getVersion() + "\n"
+                    + "Availability: " + gxDriver.getStatusLabel() + "\n"
+                    + "Renderer package bundled: " + gxDriver.isPackageBundled() + "\n"
+                    + "Runtime initializer present: " + gxDriver.hasRuntimeInitializer() + "\n"
+                    + "Selected by container: no (not in the supported driver allow-list)\n"
+                    + "Initialization verified: " + gxDriver.isInitializationVerified() + "\n"
+                    + "Active renderer: no\n"
+                    + "Detected Android Mali GPU: " + report.getCapabilities().isMali() + "\n"
+                    + "Reason: " + gxDriver.getDetail()
+                    + "\n\nAndroid host Vulkan detection does not prove that a Wine game renderer is installed or active.");
 
             addSection(context, "Diagnostic Vulkan layer",
                     "An opt-in pass-through diagnostics layer exists for Linux x86_64 Wine guest processes. "
