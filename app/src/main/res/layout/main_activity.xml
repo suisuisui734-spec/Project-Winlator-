@@ -14,9 +14,9 @@
 
         <androidx.appcompat.widget.Toolbar
             android:layout_width="match_parent"
-            android:layout_height="48dp"
+            android:layout_height="56dp"
             android:id="@+id/Toolbar"
-            android:background="?attr/gamingToolbarColor"
+            android:background="#111C2C"
             android:elevation="0dp"
             app:layout_scrollFlags="enterAlways|scroll"
             app:title=""
