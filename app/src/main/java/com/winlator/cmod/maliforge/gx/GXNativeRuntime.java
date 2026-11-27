@@ -16,7 +16,8 @@ public final class GXNativeRuntime {
         if (!GXNativeBridge.isLoaded()) {
             snapshot = Snapshot.failure(STATE_FAILED, ERROR_LIBRARY_UNAVAILABLE,
                     "libwinlator.so unavailable: " + GXNativeBridge.loadError(), "Unavailable", -1,
-                    GXHostVulkanProbe.unavailable("Native library unavailable"));
+                    GXHostVulkanProbe.unavailable("Native library unavailable"),
+                    GXVulkanDeviceBootstrap.unavailable("Native library unavailable"));
             return snapshot;
         }
         try {
