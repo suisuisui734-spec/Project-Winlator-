@@ -30,6 +30,7 @@ add_library(winlator SHARED
         winlator/mali_counters.cpp
         winlator/maliforge/gx_native_runtime.cpp
         winlator/maliforge/gx_vulkan_probe.cpp
+        winlator/maliforge/gx_vulkan_device_runtime.cpp
         winlator/renderer/shader.cpp
         winlator/renderer/window.cpp
         winlator/renderer/cursor.cpp
