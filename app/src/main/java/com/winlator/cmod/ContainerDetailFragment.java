@@ -1108,7 +1108,8 @@ public class ContainerDetailFragment extends Fragment {
                 GraphicsCapabilityDetector.detect(context));
         int unavailablePosition = itemList.size();
         itemList.add(availability.getDropdownLabel());
-        spinner.setAdapter(new GraphicsDriverArrayAdapter(context, itemList, unavailablePosition));
+        spinner.setAdapter(new GraphicsDriverArrayAdapter(
+                context, itemList, unavailablePosition, availability.isSelectable()));
     }
 
     private static void updateMaliForgeGXAvailability(Context context, TextView statusView) {
@@ -1120,18 +1121,21 @@ public class ContainerDetailFragment extends Fragment {
                 : "Android host probe: Mali GPU not detected";
         statusView.setText("MaliForge GX — " + availability.getStatusLabel()
                 + " · " + availability.getVersion()
-                + "\\n" + hostGpu
-                + "\\n" + availability.getDetail()
-                + "\\nInformational entry only; it cannot be selected or saved as a container driver.");
+                + "\n" + hostGpu
+                + "\n" + availability.getDetail()
+                + "\nInformational entry only; it cannot be selected or saved as a container driver.");
         statusView.setContentDescription(statusView.getText());
     }
 
     private static final class GraphicsDriverArrayAdapter extends ArrayAdapter<String> {
-        private final int unavailablePosition;
+        private final int gxPosition;
+        private final boolean gxSelectable;
 
-        GraphicsDriverArrayAdapter(Context context, List<String> items, int unavailablePosition) {
+        GraphicsDriverArrayAdapter(Context context, List<String> items, int gxPosition,
+                                   boolean gxSelectable) {
             super(context, android.R.layout.simple_spinner_dropdown_item, items);
-            this.unavailablePosition = unavailablePosition;
+            this.gxPosition = gxPosition;
+            this.gxSelectable = gxSelectable;
         }
 
         @Override
@@ -1141,7 +1145,8 @@ public class ContainerDetailFragment extends Fragment {
 
         @Override
         public boolean isEnabled(int position) {
-            return position != unavailablePosition && super.isEnabled(position);
+            return position != gxPosition ? super.isEnabled(position)
+                    : gxSelectable && super.isEnabled(position);
         }
 
         @Override
