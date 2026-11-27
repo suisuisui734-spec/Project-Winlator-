@@ -22,7 +22,7 @@ public final class GXRuntimeDiagnostics {
         s.append("Native bridge: ").append(nativeRuntime.getStateName()).append('\n');
         s.append("Native ABI: ").append(nativeRuntime.abi).append('\n');
         s.append("Android API: ").append(nativeRuntime.androidApiLevel < 0
-                ? "Unavailable" : nativeRuntime.androidApiLevel).append('\n');
+                ? "Unavailable" : String.valueOf(nativeRuntime.androidApiLevel)).append('\n');
         s.append("Native error: ").append(nativeRuntime.errorCode).append('\n');
         s.append("GPU renderer: ").append(gpuCapabilities.getRenderer()).append('\n');
         s.append("Vulkan version: ").append(gpuCapabilities.getVulkanVersion()).append('\n');
