@@ -92,6 +92,8 @@ import com.winlator.cmod.core.WineUtils;
 import com.winlator.cmod.inputcontrols.ControlsProfile;
 import com.winlator.cmod.inputcontrols.GameProfileManager;
 import com.winlator.cmod.execution.ExecutionManager;
+import com.winlator.cmod.execution.DependencyDetector;
+import com.winlator.cmod.graphics.GraphicsBackendSelector;
 import com.winlator.cmod.graphics.GraphicsCapabilities;
 import com.winlator.cmod.graphics.GraphicsCapabilityDetector;
 import com.winlator.cmod.graphics.GraphicsFallbackManager;
@@ -1496,6 +1498,13 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
                     ExecutionManager.Analysis preflight = ExecutionManager.analyze(
                             hostExecutable, emulator, false, wineInfo != null && wineInfo.isArm64EC());
                     Log.i(TAG, "Windows EXE preflight: " + preflight.getSummary());
+                    for (DependencyDetector.GraphicsApi api : preflight.executable.dependencies.graphicsApis) {
+                        com.winlator.cmod.graphics.MaliBackendSelector.Recommendation recommendation =
+                                GraphicsBackendSelector.select(graphicsCapabilities, api);
+                        Log.i(TAG, "Graphics hint " + api + " -> " + recommendation.backend
+                                + " (baselineValidated=" + recommendation.baselineValidated + "): "
+                                + recommendation.reason);
+                    }
                     if (!preflight.runtime.supported) {
                         Log.w(TAG, "EXE runtime preflight is conservative; existing launch behavior is unchanged.");
                     }
