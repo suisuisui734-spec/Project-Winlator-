@@ -1488,7 +1488,7 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
         GraphicsCapabilities graphicsCapabilities = GraphicsCapabilityDetector.detect(this);
         String requestedDxWrapper = dxwrapper;
         dxwrapper = GraphicsFallbackManager.selectSafeDxWrapper(dxwrapper, graphicsCapabilities);
-        if (!requestedDxWrapper.equals(dxwrapper)) {
+        if (!java.util.Objects.equals(requestedDxWrapper, dxwrapper)) {
             Log.w("XServerDisplayActivity", "Graphics capability fallback: " + requestedDxWrapper
                     + " -> " + dxwrapper + " (system Vulkan " + graphicsCapabilities.getVulkanVersion() + ")");
         }
