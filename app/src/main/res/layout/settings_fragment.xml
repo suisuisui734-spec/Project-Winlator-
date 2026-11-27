@@ -622,32 +622,6 @@
                     android:orientation="vertical"
                     android:visibility="gone">
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/bordered_panel_dark"
-                        android:padding="14dp"
-                        android:orientation="vertical"
-                        android:layout_marginBottom="16dp">
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="Device &amp; Graphics Compatibility"
-                            android:textStyle="bold"
-                            android:textSize="14sp"
-                            android:textColor="?attr/colorAccent"
-                            android:layout_marginBottom="8dp" />
-
-                        <TextView
-                            android:id="@+id/TVHelioG100DeviceInfo"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="Reading device capabilities..."
-                            android:textSize="12sp"
-                            android:textColor="?android:attr/textColorSecondary" />
-                    </LinearLayout>
-
                     <!-- System Performance Enhancements -->
                     <TextView
                         android:id="@+id/TVPerformanceHeader"
@@ -752,24 +726,6 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="Requests Android sustained performance mode to prevent abrupt thermal clock throttling spikes and maintain consistent frame pacing."
-                            android:textSize="11sp"
-                            android:textColor="?android:attr/textColorSecondary"
-                            android:layout_marginStart="32dp"
-                            android:layout_marginBottom="12dp" />
-
-                        <!-- Thermal-aware optional boost guard -->
-                        <CheckBox
-                            android:id="@+id/CBThermalGuard"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="Pause optional boosts when the device gets hot"
-                            android:textStyle="bold"
-                            android:textSize="13sp" />
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="On Android 10+, pauses Winlator's optional thread-priority and sustained-performance hints at Moderate thermal status or higher. Hints resume only after cooling to Light or lower. Android thermal protections are never changed."
                             android:textSize="11sp"
                             android:textColor="?android:attr/textColorSecondary"
                             android:layout_marginStart="32dp"

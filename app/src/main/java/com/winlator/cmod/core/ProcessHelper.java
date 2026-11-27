@@ -3,8 +3,6 @@ package com.winlator.cmod.core;
 import android.os.Process;
 import android.util.Log;
 
-import com.winlator.cmod.BuildConfig;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -16,10 +14,10 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Executors;
 
 public abstract class ProcessHelper {
-    private static final String TAG = "ProcessHelper";
-    public static final boolean PRINT_DEBUG = BuildConfig.DEBUG;
+    public static final boolean PRINT_DEBUG = true; // FIXME change to false
     private static final ArrayList<Callback<String>> debugCallbacks = new ArrayList<>();
     private static final byte SIGCONT = 18;
     private static final byte SIGSTOP = 19;
@@ -28,22 +26,22 @@ public abstract class ProcessHelper {
 
     public static void suspendProcess(int pid) {
         Process.sendSignal(pid, SIGSTOP);
-        debugLog("Process suspended with pid: " + pid);
+        Log.d("ProcessHelper", "Process suspended with pid: " + pid);
     }
 
     public static void resumeProcess(int pid) {
         Process.sendSignal(pid, SIGCONT);
-        debugLog("Process resumed with pid: " + pid);
+        Log.d("ProcessHelper", "Process resumed with pid: " + pid);
     }
 
     public static void terminateProcess(int pid) {
         Process.sendSignal(pid, SIGTERM);
-        debugLog("Process terminated with pid: " + pid);
+        Log.d("ProcessHelper", "Process terminated with pid: " + pid);
     }
 
     public static void killProcess(int pid) {
         Process.sendSignal(pid, SIGKILL);
-        debugLog("Process killed with pid: " + pid);
+        Log.d("ProcessHelper", "Process killed with pid: " + pid);
     }
 
     public static void terminateAllWineProcesses() {
@@ -114,18 +112,17 @@ public abstract class ProcessHelper {
     }
 
     public static int exec(String command, String[] envp, File workingDir, Callback<Integer> terminationCallback) {
-        // Environment values can contain secrets. Log only the command in debug builds.
-        debugLog("Starting child command: " + command);
+        Log.d("ProcessHelper", "env: " + Arrays.toString(envp) + "\ncmd: " + command);
 
         // Store env vars for future use
         EnvironmentManager.setEnvVars(envp);
 
         int pid = -1;
         try {
-            debugLog("Splitting command: " + command);
+            Log.d("ProcessHelper", "Splitting command: " + command);
             String[] splitCommand = splitCommand(command);
-            debugLog("Split command result: " + Arrays.toString(splitCommand));
-            debugLog("Starting process...");
+            Log.d("ProcessHelper", "Split command result: " + Arrays.toString(splitCommand));
+            Log.d("ProcessHelper", "Starting process...");
             ProcessBuilder pb = new ProcessBuilder(splitCommand);
             pb.directory(workingDir);
             pb.environment().putAll(EnvironmentManager.getEnvVars());
@@ -137,12 +134,12 @@ public abstract class ProcessHelper {
             java.lang.Process process = pb.start();
 
             // Accessing hidden field
-            debugLog("Accessing hidden field to get PID");
+            Log.d("ProcessHelper", "Accessing hidden field to get PID");
             Field pidField = process.getClass().getDeclaredField("pid");
             pidField.setAccessible(true);
             pid = pidField.getInt(process);
             pidField.setAccessible(false);
-            debugLog("Process started with pid: " + pid);
+            Log.d("ProcessHelper", "Process started with pid: " + pid);
 
             if (!debugCallbacks.isEmpty()) {
                 createDebugThread(process.getInputStream());
@@ -158,15 +155,11 @@ public abstract class ProcessHelper {
         return pid;
     }
 
-    static String formatAffinityMask(int mask) {
-        return Integer.toHexString(mask);
-    }
-
     public static boolean setLinuxAffinity(int linuxPid, int mask) {
         if (linuxPid <= 0 || mask == 0) return false;
         try {
             java.lang.Process p = Runtime.getRuntime().exec(new String[]{
-                "/system/bin/taskset", "-a", "-p", formatAffinityMask(mask), Integer.toString(linuxPid)
+                "/system/bin/taskset", "-a", "-p", Integer.toHexString(mask & 0xff), Integer.toString(linuxPid)
             });
             return p.waitFor() == 0;
         } catch (Exception e) {
@@ -175,12 +168,8 @@ public abstract class ProcessHelper {
         }
     }
 
-    private static void debugLog(String message) {
-        if (PRINT_DEBUG) Log.d(TAG, message);
-    }
-
     private static void createDebugThread(final InputStream inputStream) {
-        AppExecutors.executeBackground(() -> {
+        Executors.newSingleThreadExecutor().execute(() -> {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
@@ -199,7 +188,7 @@ public abstract class ProcessHelper {
     }
 
     private static void createWaitForThread(java.lang.Process process, final Callback<Integer> terminationCallback) {
-        AppExecutors.executeBackground(new Runnable() {
+        Executors.newSingleThreadExecutor().execute(new Runnable() {
             @Override
             public void run() {
                 try {
@@ -216,21 +205,21 @@ public abstract class ProcessHelper {
     public static void removeAllDebugCallbacks() {
         synchronized (debugCallbacks) {
             debugCallbacks.clear();
-            debugLog("All debug callbacks removed");
+            Log.d("ProcessHelper", "All debug callbacks removed");
         }
     }
 
     public static void addDebugCallback(Callback<String> callback) {
         synchronized (debugCallbacks) {
             if (!debugCallbacks.contains(callback)) debugCallbacks.add(callback);
-            debugLog("Added debug callback: " + callback.toString());
+            Log.d("ProcessHelper", "Added debug callback: " + callback.toString());
         }
     }
 
     public static void removeDebugCallback(Callback<String> callback) {
         synchronized (debugCallbacks) {
             debugCallbacks.remove(callback);
-            debugLog("Removed debug callback: " + callback.toString());
+            Log.d("ProcessHelper", "Removed debug callback: " + callback.toString());
         }
     }
 

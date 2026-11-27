@@ -1384,7 +1384,6 @@ public class WinlatorHUD extends View {
         prefs.edit().putBoolean(KEY_VIS, false).apply();
         uiHandler.removeCallbacks(redrawRunnable);
         redrawScheduled = false;
-        if (dataSource != null) dataSource.pause();
         setVisibility(GONE);
     }
 

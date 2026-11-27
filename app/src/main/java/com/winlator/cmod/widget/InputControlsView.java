@@ -327,7 +327,6 @@ public class InputControlsView extends View {
     }
 
     public synchronized void setProfile(ControlsProfile profile) {
-        if (this.profile != profile) releaseActiveTouchInputs();
         if (profile != null) {
             this.profile = profile;
             this.overlayOpacity = profile.getOverlayOpacity();
@@ -382,16 +381,7 @@ public class InputControlsView extends View {
 
     @Override
     protected void onDetachedFromWindow() {
-        releaseActiveTouchInputs();
-        removeCallbacks(moveRedraw);
-        moveRedrawPending = false;
-        if (timeoutHandler != null && hideControlsRunnable != null) {
-            timeoutHandler.removeCallbacks(hideControlsRunnable);
-        }
-        if (mouseMoveTimer != null) {
-            mouseMoveTimer.cancel();
-            mouseMoveTimer = null;
-        }
+        if (mouseMoveTimer != null) mouseMoveTimer.cancel();
         synchronized(keyPressures) {
             for (Map.Entry<Binding, Boolean> entry : keyStates.entrySet()) {
                 if (entry.getValue()) xServer.injectKeyRelease(entry.getKey().keycode);
@@ -400,25 +390,6 @@ public class InputControlsView extends View {
             keyPressures.clear();
         }
         super.onDetachedFromWindow();
-    }
-
-    @Override
-    protected void onVisibilityChanged(View changedView, int visibility) {
-        super.onVisibilityChanged(changedView, visibility);
-        if (visibility != View.VISIBLE) releaseActiveTouchInputs();
-    }
-
-    /** Releases pointer-owned virtual inputs before the overlay is hidden, replaced or detached. */
-    private void releaseActiveTouchInputs() {
-        ControlsProfile activeProfile = profile;
-        if (activeProfile != null && activeProfile.isElementsLoaded() && xServer != null) {
-            for (ControlElement element : activeProfile.getElements()) {
-                int pointerId = element.getCurrentPointerId();
-                if (pointerId != -1) element.handleTouchUp(pointerId);
-            }
-        }
-        mouseMoveOffset.set(0, 0);
-        if (radialWheelManager != null) radialWheelManager.dismissAll();
     }
 
     private void createMouseMoveTimer() {
