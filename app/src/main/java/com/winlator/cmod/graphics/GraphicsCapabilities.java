@@ -12,11 +12,18 @@ public final class GraphicsCapabilities {
     private static final Pattern VERSION_PATTERN = Pattern.compile("(\\d+)\\.(\\d+)");
     private final String renderer;
     private final String vulkanVersion;
+    private final int vendorId;
     private final int major, minor;
     private final Set<String> extensions;
 
     public GraphicsCapabilities(String renderer, String vulkanVersion, String[] extensions) {
+        this(renderer, vulkanVersion, 0, extensions);
+    }
+
+    /** vendorId is the Vulkan physical-device vendor ID; zero means the probe did not return one. */
+    public GraphicsCapabilities(String renderer, String vulkanVersion, int vendorId, String[] extensions) {
         this.renderer = clean(renderer);
+        this.vendorId = vendorId;
         this.vulkanVersion = clean(vulkanVersion);
         int[] version = parseVersion(this.vulkanVersion);
         major = version[0];
@@ -34,6 +41,8 @@ public final class GraphicsCapabilities {
 
     public String getRenderer() { return renderer; }
     public String getVulkanVersion() { return vulkanVersion; }
+    public int getVendorId() { return vendorId; }
+    public boolean hasVendorId() { return vendorId != 0; }
     public boolean hasVulkanVersion() { return major > 0; }
     public int getVulkanMajor() { return major; }
     public int getVulkanMinor() { return minor; }
