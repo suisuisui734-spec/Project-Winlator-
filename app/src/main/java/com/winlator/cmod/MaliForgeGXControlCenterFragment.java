@@ -24,6 +24,7 @@ import com.winlator.cmod.maliforge.gx.GXBackendSelector;
 import com.winlator.cmod.maliforge.gx.GXEngineReport;
 import com.winlator.cmod.maliforge.gx.GXGraphicsDriverAvailability;
 import com.winlator.cmod.maliforge.gx.GXNativeRuntime;
+import com.winlator.cmod.maliforge.gx.GXVulkanDeviceBootstrap;
 import com.winlator.cmod.maliforge.gx.GXRuntimeDiagnostics;
 import com.winlator.cmod.maliforge.gx.MaliForgeGXEngine;
 
@@ -168,6 +169,13 @@ public final class MaliForgeGXControlCenterFragment extends Fragment {
                     nativeRuntime.hostVulkanProbe.toDiagnosticText()
                     + "\n\nThis query uses the Android host Vulkan loader. It does not create a game device, "
                     + "swapchain, Wine renderer, or Vulkan ICD.");
+
+            GXVulkanDeviceBootstrap.Result deviceBootstrap = nativeRuntime.vulkanDeviceBootstrap;
+            addSection(context, "Native Vulkan logical-device bootstrap",
+                    deviceBootstrap.toDiagnosticText()
+                    + "\n\nThis holds an Android host VkDevice and graphics queue for the app process. "
+                    + "It is not a Wine guest device, does not create a game surface or swapchain, "
+                    + "and does not render game frames.");
 
             addSection(context, "Backend planning (advisory only)", selectionText
                     + "\n\nThis planner does not change container settings or switch your selected wrapper.");
