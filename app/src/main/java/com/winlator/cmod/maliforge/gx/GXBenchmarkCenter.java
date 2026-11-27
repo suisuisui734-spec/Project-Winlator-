@@ -36,7 +36,7 @@ public final class GXBenchmarkCenter {
         private Session(boolean valid,Source source,String game,String device,String workload,String profile,int n,double avgFps,double minFps,double maxFps,double avg,double min,double max,double p50,double p95,double p99,int stutters,double rate,String note){
             this.valid=valid;this.source=source;this.game=game;this.device=device;this.workload=workload;this.profile=profile;sampleCount=n;averageFps=avgFps;this.minFps=minFps;this.maxFps=maxFps;averageMs=avg;minMs=min;maxMs=max;p50Ms=p50;p95Ms=p95;p99Ms=p99;this.stutters=stutters;stutterRate=rate;this.note=note;
         }
-        private static Session invalid(String reason){return new Session(false,Source.UNKNOWN,"","","","",0,0,0,0,0,0,0,0,0,0,0,reason);}
+        private static Session invalid(String reason){return new Session(false,Source.UNKNOWN,"","","","",0,0,0,0,0,0,0,0,0,0,0,0,reason);}
     }
     public static final class Comparison{public final boolean allowed;public final String summary;private Comparison(boolean a,String s){allowed=a;summary=s;}}
 }
