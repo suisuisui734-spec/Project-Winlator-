@@ -11,7 +11,7 @@ public class GXHostVulkanProbeTest {
     public void parsesDeviceMetadataAndQueueCapabilities() {
         String payload = "{\"status\":\"available\",\"stage\":\"complete\",\"vkResult\":0,"
                 + "\"deviceCount\":1,\"devices\":[{"
-                + "\"name\":\"Mali-G57\",\"vendorId\":1600,\"deviceId\":2,"
+                + "\"name\":\"Mali-G57\",\"vendorId\":5045,\"deviceId\":2,"
                 + "\"apiVersion\":\"1.3.0\",\"driverVersion\":7,"
                 + "\"deviceType\":\"integrated\",\"graphicsQueue\":true,"
                 + "\"computeQueue\":true,\"transferQueue\":true,"
