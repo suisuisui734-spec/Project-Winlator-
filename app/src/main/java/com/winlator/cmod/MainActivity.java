@@ -222,7 +222,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private static final int[] CONTROLLER_SECTIONS = {
         R.id.main_menu_shortcuts, R.id.main_menu_containers, R.id.main_menu_input_controls,
         R.id.main_menu_contents, R.id.main_menu_community_configs, R.id.main_menu_file_manager,
-        R.id.main_menu_manage_graphics_drivers, R.id.main_menu_adrenotools_gpu_drivers, R.id.main_menu_settings
+        R.id.main_menu_manage_graphics_drivers, R.id.main_menu_maliforge_gx,
+        R.id.main_menu_adrenotools_gpu_drivers, R.id.main_menu_settings
     };
 
     @Override
@@ -494,6 +495,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 break;
             case R.id.main_menu_manage_graphics_drivers:
                 show(new ManageGraphicsDriversFragment(), false);
+                break;
+            case R.id.main_menu_maliforge_gx:
+                show(new MaliForgeGXControlCenterFragment(), false);
                 break;
             case R.id.main_menu_adrenotools_gpu_drivers:
                 show(new AdrenotoolsFragment(), false);
