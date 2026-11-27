@@ -64,7 +64,8 @@ No APK is attached to this PR unless the matching CI run successfully generates 
 
 - Stage 4 Linux software Vulkan smoke-test and APK x86_64 asset validation: PASS in hosted CI.
 - Stage 3 and Stage 5 hosted CI jobs: PASS.
-- Stage 11 hosted CI: dependency resolution failure due HTTP 429 from Maven Central; rerun requested, result must be checked.
+- Stage 11 hosted CI: initial attempt hit Maven Central HTTP 429; rerun completed successfully, including unit tests/lint, APK build, APK inspection, guest-layer ELF validation, and artifact upload (run ID 45988103760).
+- Stage 22/23 workflow changes: PR review is open; no successful run for the extended branch-coverage workflow has been confirmed yet.
 - Other stage-specific CI runs: verify from their individual PR/commit checks; do not infer a pass from the existence of a PR.
 - Real Android host tests on Helio G100/Mali-G57 MC2: NOT TESTED.
 - Real game FPS, frame-time, stutter, thermal, and memory benchmarks: NOT MEASURED.
