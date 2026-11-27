@@ -90,6 +90,10 @@ import com.winlator.cmod.core.WineStartMenuCreator;
 import com.winlator.cmod.core.WineThemeManager;
 import com.winlator.cmod.core.WineUtils;
 import com.winlator.cmod.inputcontrols.ControlsProfile;
+import com.winlator.cmod.inputcontrols.GameProfileManager;
+import com.winlator.cmod.graphics.GraphicsCapabilities;
+import com.winlator.cmod.graphics.GraphicsCapabilityDetector;
+import com.winlator.cmod.graphics.GraphicsFallbackManager;
 import com.winlator.cmod.inputcontrols.RadialWheelConfig;
 import java.util.List;
 import com.winlator.cmod.PlayerSlotsDialog;
@@ -1481,6 +1485,14 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
         FileUtils.clear(imageFs.getTmpDir());
 
 
+        GraphicsCapabilities graphicsCapabilities = GraphicsCapabilityDetector.detect(this);
+        String requestedDxWrapper = dxwrapper;
+        dxwrapper = GraphicsFallbackManager.selectSafeDxWrapper(dxwrapper, graphicsCapabilities);
+        if (!requestedDxWrapper.equals(dxwrapper)) {
+            Log.w("XServerDisplayActivity", "Graphics capability fallback: " + requestedDxWrapper
+                    + " -> " + dxwrapper + " (system Vulkan " + graphicsCapabilities.getVulkanVersion() + ")");
+        }
+
         guestProgramLauncherComponent = new GuestProgramLauncherComponent(
                 contentsManager,
                 contentsManager.getProfileByEntryName(container.getWineVersion()),
@@ -1715,11 +1727,8 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
         applyScreenMode(fullscreenMode, screenAlignment, false);
 
         if (shortcut != null) {
-            String controlsProfile = shortcut.getExtra("controlsProfile");
-            if (!controlsProfile.isEmpty()) {
-                ControlsProfile profile = inputControlsManager.getProfile(Integer.parseInt(controlsProfile));
-                if (profile != null) showInputControls(profile);
-            }
+            ControlsProfile profile = GameProfileManager.resolve(this, inputControlsManager, shortcut);
+            if (profile != null) showInputControls(profile);
 
             String simTouchScreen = shortcut.getExtra("simTouchScreen");
             touchpadView.setSimTouchScreen(simTouchScreen.equals("1"));
@@ -2160,9 +2169,11 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
                 touchpadView.setOnTouchListener(null); // Disable the listener if timeout is disabled
             }
             int position = sProfile.getSelectedItemPosition();
-            if (position > 0) {
-                showInputControls(inputControlsManager.getProfiles().get(position - 1));
-            }
+            ArrayList<ControlsProfile> selectedProfiles = inputControlsManager.getProfiles(true);
+            ControlsProfile selectedProfile = (position > 0 && position <= selectedProfiles.size())
+                    ? selectedProfiles.get(position - 1) : null;
+            GameProfileManager.remember(this, shortcut, selectedProfile);
+            if (selectedProfile != null) showInputControls(selectedProfile);
             else hideInputControls();
             updateProfile.run();
         });
