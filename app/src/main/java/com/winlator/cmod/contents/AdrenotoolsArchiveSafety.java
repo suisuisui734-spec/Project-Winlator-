@@ -80,6 +80,8 @@ public final class AdrenotoolsArchiveSafety {
                 && header[1] == 'E' && header[2] == 'L' && header[3] == 'F'
                 && (header[4] & 0xff) == 2
                 && (header[5] & 0xff) == 1
+                && (header[16] & 0xff) == 3
+                && (header[17] & 0xff) == 0
                 && (header[18] & 0xff) == 0xb7
                 && (header[19] & 0xff) == 0x00;
     }
