@@ -18,6 +18,7 @@ import android.util.Log;
 
 import androidx.palette.graphics.Palette;
 
+import com.winlator.cmod.core.AppExecutors;
 import com.winlator.cmod.core.FileUtils;
 import com.winlator.cmod.core.ImageUtils;
 import com.winlator.cmod.core.StringUtils;
@@ -35,7 +36,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 public class Shortcut {
     public final Container container;
@@ -60,7 +60,7 @@ public class Shortcut {
     private static final String HERO_ART_DIR = "app_data/hero_arts/";
     private static final String FALLBACK_HERO_ART_DIR = "app_data/fallback_hero_arts/";
 
-    private static final ExecutorService backgroundExecutor = Executors.newFixedThreadPool(4);
+    private static final ExecutorService backgroundExecutor = AppExecutors.assetExecutor();
 
     public interface OnShortcutLoadedListener {
         void onShortcutLoaded(Shortcut shortcut);
