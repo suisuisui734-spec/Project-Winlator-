@@ -6,9 +6,53 @@ on:
       - feature/helio-g100-mali-optimization
       - feature/helio-g100-performance-phase2
       - feature/helio-g100-native-overlay-execution
+      - feature/maliforge-gx-stage2-runtime
+      - feature/maliforge-gx-stage3-backend-integration
+      - feature/maliforge-gx-stage4-real-graphics-runtime
+      - feature/maliforge-gx-stage05-shader-lab
+      - feature/maliforge-gx-stage06-framepacing
+      - feature/maliforge-gx-stage07-performance
+      - feature/maliforge-gx-stage08-adaptive
+      - feature/maliforge-gx-stage09-resolution
+      - feature/maliforge-gx-stage10-memory
+      - feature/maliforge-gx-stage11-compatibility
+      - feature/maliforge-gx-stage12-game-profiles
+      - feature/maliforge-gx-stage13-graphics-integrity
+      - feature/maliforge-gx-stage14-recovery
+      - feature/maliforge-gx-stage15-diagnostics
+      - feature/maliforge-gx-stage16-benchmark
+      - feature/maliforge-gx-stage17-control-center
+      - feature/maliforge-gx-stage18-gamepad
+      - feature/maliforge-gx-stage19-config-safety
+      - feature/maliforge-gx-stage20-storage
+      - feature/maliforge-gx-stage21-game-advisor
+      - feature/maliforge-gx-stage22-ci
+      - feature/maliforge-gx-stage23-release
   pull_request:
     branches:
       - main
+      - feature/maliforge-gx-stage2-runtime
+      - feature/maliforge-gx-stage3-backend-integration
+      - feature/maliforge-gx-stage4-real-graphics-runtime
+      - feature/maliforge-gx-stage05-shader-lab
+      - feature/maliforge-gx-stage06-framepacing
+      - feature/maliforge-gx-stage07-performance
+      - feature/maliforge-gx-stage08-adaptive
+      - feature/maliforge-gx-stage09-resolution
+      - feature/maliforge-gx-stage10-memory
+      - feature/maliforge-gx-stage11-compatibility
+      - feature/maliforge-gx-stage12-game-profiles
+      - feature/maliforge-gx-stage13-graphics-integrity
+      - feature/maliforge-gx-stage14-recovery
+      - feature/maliforge-gx-stage15-diagnostics
+      - feature/maliforge-gx-stage16-benchmark
+      - feature/maliforge-gx-stage17-control-center
+      - feature/maliforge-gx-stage18-gamepad
+      - feature/maliforge-gx-stage19-config-safety
+      - feature/maliforge-gx-stage20-storage
+      - feature/maliforge-gx-stage21-game-advisor
+      - feature/maliforge-gx-stage22-ci
+      - feature/maliforge-gx-stage23-release
   workflow_dispatch:
     inputs:
       flavor:
@@ -51,6 +95,17 @@ jobs:
       - name: Validate source structure and ARM64/Mali integration
         run: bash scripts/validate-source.sh
 
+      - name: Validate MaliForge GX stage and CI coverage
+        run: bash scripts/validate-maliforge-gx-ci.sh
+
+      - name: Install host Vulkan software-test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libvulkan-dev mesa-vulkan-drivers
+
+      - name: Build and smoke-test MaliForge GX guest Vulkan layer
+        run: bash scripts/build-maliforge-gx-layer.sh --smoke-test
+
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
@@ -78,8 +133,22 @@ jobs:
         run: |
           set -euo pipefail
           CAP_FLAVOR="$(echo "${FLAVOR:0:1}" | tr '[:lower:]' '[:upper:]')${FLAVOR:1}"
-          ./gradlew ":app:test${CAP_FLAVOR}DebugUnitTest" ":app:lint${CAP_FLAVOR}Debug" --no-daemon --stacktrace
-
+          for attempt in 1 2 3; do
+            set +e
+            ./gradlew ":app:test${CAP_FLAVOR}DebugUnitTest" ":app:lint${CAP_FLAVOR}Debug" --no-daemon --stacktrace 2>&1 | tee "$RUNNER_TEMP/gx-test-${attempt}.log"
+            gradle_status=${PIPESTATUS[0]}
+            set -e
+            if [ "$gradle_status" -eq 0 ]; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ] && grep -Eq 'Received status code (429|5[0-9]{2})|Could not GET' "$RUNNER_TEMP/gx-test-${attempt}.log"; then
+              echo "Transient repository/network error while resolving dependencies; retrying attempt $((attempt + 1))/3."
+              sleep $((attempt * 15))
+              continue
+            fi
+            exit "$gradle_status"
+          done
+          exit 1
       - name: Build APK(s)
         shell: bash
         run: |
@@ -106,12 +175,43 @@ jobs:
             --output phase2-artifacts/apk-inspection.json
           cat phase2-artifacts/apk-inspection.json
 
+      - name: Verify MaliForge GX guest layer is packaged as an x86_64 asset
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="$(find app/build/outputs/apk -type f -name '*.apk' -print -quit)"
+          mkdir -p phase4-artifacts
+          python3 - "$APK" <<'PY'
+          import json, struct, sys, zipfile
+          apk = sys.argv[1]
+          asset = "assets/maliforge-gx/libmaliforge_gx_layer_x86_64.so"
+          with zipfile.ZipFile(apk) as archive:
+              if asset not in archive.namelist():
+                  raise SystemExit(f"Missing APK asset: {asset}")
+              data = archive.read(asset)
+          if len(data) < 20 or data[:4] != b"\x7fELF":
+              raise SystemExit("MaliForge layer asset is not an ELF object")
+          if data[4] != 2 or data[5] != 1:
+              raise SystemExit("MaliForge layer asset must be ELF64 little-endian")
+          machine = struct.unpack_from("<H", data, 18)[0]
+          if machine != 62:
+              raise SystemExit(f"Expected EM_X86_64 (62), found {machine}")
+          report = {"apk": apk, "asset": asset, "elf_class": 64,
+                    "endianness": "little", "machine": "x86_64", "size_bytes": len(data)}
+          with open("phase4-artifacts/maliforge-layer-asset.json", "w", encoding="utf-8") as out:
+              json.dump(report, out, indent=2)
+          print(json.dumps(report, indent=2))
+          PY
+
       - name: Upload APK and inspection report
         uses: actions/upload-artifact@v4
         with:
-          name: project-winlator-${{ env.FLAVOR }}-${{ env.BUILD_TYPE }}-phase2
+          name: project-winlator-${{ env.FLAVOR }}-${{ env.BUILD_TYPE }}-stage23-validation
           path: |
             app/build/outputs/apk/**/*.apk
             phase2-artifacts/*
+            phase4-artifacts/*
           if-no-files-found: error
           retention-days: 14
+
+

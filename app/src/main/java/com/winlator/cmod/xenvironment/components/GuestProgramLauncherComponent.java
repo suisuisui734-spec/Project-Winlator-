@@ -24,6 +24,8 @@ import com.winlator.cmod.core.KeyValueSet;
 import com.winlator.cmod.core.ProcessHelper;
 import com.winlator.cmod.core.TarCompressorUtils;
 import com.winlator.cmod.core.WineInfo;
+import com.winlator.cmod.maliforge.gx.GXGuestVulkanLayerConfig;
+import com.winlator.cmod.maliforge.gx.GXGuestVulkanLayerInstaller;
 import com.winlator.cmod.fexcore.FEXCoreManager;
 import com.winlator.cmod.fexcore.FEXCorePreset;
 import com.winlator.cmod.fexcore.FEXCorePresetManager;
@@ -485,6 +487,42 @@ public class GuestProgramLauncherComponent extends EnvironmentComponent {
         // Merge any additional environment variables from external sources
         if (this.envVars != null) {
             execEnvVars.putAll(this.envVars);
+        }
+
+        // Implicit per-container opt-in. The layer is installed into ImageFS and is never
+        // injected into ARM64EC or 32-bit guests; the existing Vulkan driver/ICD is unchanged.
+        String gxLayerRequest = execEnvVars.get(GXGuestVulkanLayerConfig.ENABLE_ENV);
+        if (!gxLayerRequest.isEmpty()) {
+            // Consume the container request; re-add it only after the guest layer is installed.
+            execEnvVars.remove(GXGuestVulkanLayerConfig.ENABLE_ENV);
+            if (GXGuestVulkanLayerConfig.isRequested(gxLayerRequest)) {
+                String guestArch = wineInfo == null ? null : wineInfo.getArch();
+                if (!"x86_64".equalsIgnoreCase(guestArch == null ? "" : guestArch.trim())) {
+                    Log.w("MaliForgeGX", "Vulkan diagnostics layer supports x86_64 guests only; not installed for "
+                            + (guestArch == null ? "unknown" : guestArch) + ".");
+                } else {
+                    GXGuestVulkanLayerInstaller.InstallResult gxInstall =
+                            new GXGuestVulkanLayerInstaller().install(context, imageFs);
+                    GXGuestVulkanLayerConfig.Activation gxActivation =
+                            GXGuestVulkanLayerConfig.prepare(
+                                    gxLayerRequest, guestArch, gxInstall.available,
+                                    execEnvVars.get(GXGuestVulkanLayerConfig.ADD_PATH_ENV),
+                                    execEnvVars.get(GXGuestVulkanLayerConfig.DISABLE_ENV),
+                                    gxInstall.manifestDirectory == null ? null
+                                            : gxInstall.manifestDirectory.getAbsolutePath(),
+                                    gxInstall.logFile == null ? null : gxInstall.logFile.getAbsolutePath());
+                    if (gxActivation.enabled) {
+                        execEnvVars.put(GXGuestVulkanLayerConfig.ADD_PATH_ENV,
+                                gxActivation.addImplicitLayerPaths);
+                        execEnvVars.put(GXGuestVulkanLayerConfig.ENABLE_ENV, "1");
+                        execEnvVars.put(GXGuestVulkanLayerConfig.LOG_ENV, gxActivation.logPath);
+                        Log.i("MaliForgeGX", "Experimental implicit Vulkan diagnostics layer enabled for x86_64 guest.");
+                    } else {
+                        Log.w("MaliForgeGX", "Vulkan diagnostics layer not enabled: "
+                                + (gxInstall.available ? gxActivation.reason : gxInstall.reason));
+                    }
+                }
+            }
         }
 
         String emulator = container.getEmulator();
