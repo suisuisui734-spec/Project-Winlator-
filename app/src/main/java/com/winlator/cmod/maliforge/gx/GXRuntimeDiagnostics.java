@@ -49,6 +49,7 @@ public final class GXRuntimeDiagnostics {
         s.append("GPU renderer: ").append(gpuCapabilities.getRenderer()).append('\n');
         s.append("GPU identity probe: ").append(backendCapabilities.getGpuIdentityState()).append('\n');
         s.append("Vulkan version: ").append(gpuCapabilities.getVulkanVersion()).append('\n');
+        s.append("Native host Vulkan probe: ").append(nativeRuntime.hostVulkanProbe.summary()).append('\n');
         s.append("Vulkan API capability: ").append(backendCapabilities.getVulkanApiState()).append('\n');
         s.append("Vulkan extensions observed: ").append(gpuCapabilities.getExtensionCount()).append('\n');
         s.append("Game OpenGL ES context: ").append(backendCapabilities.getGlesGameContextState()).append('\n');
