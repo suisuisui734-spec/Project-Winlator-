@@ -5,6 +5,7 @@ on:
     branches:
       - feature/helio-g100-mali-optimization
       - feature/helio-g100-performance-phase2
+      - feature/helio-g100-native-overlay-execution
   pull_request:
     branches:
       - main
