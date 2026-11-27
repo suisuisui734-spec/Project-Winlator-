@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <pthread.h>
 #include <stdarg.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -34,13 +35,38 @@ typedef struct GxPhysicalDeviceRecord {
 typedef struct GxDeviceRecord {
     VkDevice device;
     PFN_vkGetDeviceProcAddr next_gdpa;
+    uint64_t queue_submit_calls;
+    uint64_t queue_submit_failures;
+    uint64_t queue_submit_total_ns;
+    uint64_t queue_submit_max_ns;
+    uint64_t queue_present_calls;
+    uint64_t queue_present_failures;
+    uint64_t queue_present_successes;
+    uint64_t queue_present_total_ns;
+    uint64_t queue_present_max_ns;
+    uint64_t queue_present_interval_samples;
+    uint64_t queue_present_interval_total_ns;
+    uint64_t queue_present_interval_max_ns;
+    uint64_t last_present_start_ns;
     struct GxDeviceRecord *next;
 } GxDeviceRecord;
+
+typedef struct GxQueueRecord {
+    VkQueue queue;
+    VkDevice device;
+    struct GxQueueRecord *next;
+} GxQueueRecord;
+
+typedef struct GxQueueDispatch {
+    VkDevice device;
+    PFN_vkGetDeviceProcAddr next_gdpa;
+} GxQueueDispatch;
 
 static pthread_mutex_t gx_lock = PTHREAD_MUTEX_INITIALIZER;
 static GxInstanceRecord *gx_instances;
 static GxPhysicalDeviceRecord *gx_physical_devices;
 static GxDeviceRecord *gx_devices;
+static GxQueueRecord *gx_queues;
 
 static GxInstanceRecord *find_instance(VkInstance instance) {
     GxInstanceRecord *record;
@@ -64,6 +90,46 @@ static GxDeviceRecord *find_device(VkDevice device) {
         if (record->device == device) return record;
     }
     return NULL;
+}
+
+static void remember_queue(VkDevice device, VkQueue queue) {
+    if (device == VK_NULL_HANDLE || queue == VK_NULL_HANDLE) return;
+    pthread_mutex_lock(&gx_lock);
+    GxQueueRecord *record;
+    for (record = gx_queues; record != NULL; record = record->next) {
+        if (record->queue == queue) {
+            record->device = device;
+            pthread_mutex_unlock(&gx_lock);
+            return;
+        }
+    }
+    record = (GxQueueRecord *) calloc(1, sizeof(*record));
+    if (record != NULL) {
+        record->queue = queue;
+        record->device = device;
+        record->next = gx_queues;
+        gx_queues = record;
+    }
+    pthread_mutex_unlock(&gx_lock);
+}
+
+static int snapshot_queue_dispatch(VkQueue queue, GxQueueDispatch *dispatch) {
+    if (queue == VK_NULL_HANDLE || dispatch == NULL) return 0;
+    int found = 0;
+    pthread_mutex_lock(&gx_lock);
+    for (GxQueueRecord *queue_record = gx_queues;
+         queue_record != NULL; queue_record = queue_record->next) {
+        if (queue_record->queue != queue) continue;
+        GxDeviceRecord *device_record = find_device(queue_record->device);
+        if (device_record != NULL) {
+            dispatch->device = device_record->device;
+            dispatch->next_gdpa = device_record->next_gdpa;
+            found = 1;
+        }
+        break;
+    }
+    pthread_mutex_unlock(&gx_lock);
+    return found;
 }
 
 static void log_event(const char *event, const char *format, ...) {
@@ -206,6 +272,17 @@ static void forget_device(VkDevice device) {
             break;
         }
         cursor = &(*cursor)->next;
+    }
+
+    GxQueueRecord **queue_cursor = &gx_queues;
+    while (*queue_cursor != NULL) {
+        if ((*queue_cursor)->device == device) {
+            GxQueueRecord *removed = *queue_cursor;
+            *queue_cursor = removed->next;
+            free(removed);
+            continue;
+        }
+        queue_cursor = &(*queue_cursor)->next;
     }
     pthread_mutex_unlock(&gx_lock);
 }
@@ -509,6 +586,203 @@ static void VKAPI_CALL gx_destroy_device(VkDevice device,
     forget_device(device);
 }
 
+
+static uint64_t monotonic_now_ns(void) {
+    struct timespec now;
+    if (clock_gettime(CLOCK_MONOTONIC, &now) != 0) return 0;
+    return (uint64_t) now.tv_sec * 1000000000ULL + (uint64_t) now.tv_nsec;
+}
+
+static void record_queue_submit_metrics(VkDevice device, uint64_t elapsed_ns,
+                                        VkResult result) {
+    uint64_t calls = 0, failures = 0, total_ns = 0, max_ns = 0;
+    int emit = 0;
+    pthread_mutex_lock(&gx_lock);
+    GxDeviceRecord *record = find_device(device);
+    if (record != NULL) {
+        record->queue_submit_calls++;
+        if (result != VK_SUCCESS) record->queue_submit_failures++;
+        record->queue_submit_total_ns += elapsed_ns;
+        if (elapsed_ns > record->queue_submit_max_ns)
+            record->queue_submit_max_ns = elapsed_ns;
+        calls = record->queue_submit_calls;
+        failures = record->queue_submit_failures;
+        total_ns = record->queue_submit_total_ns;
+        max_ns = record->queue_submit_max_ns;
+        emit = calls == 1 || (calls % 256) == 0;
+    }
+    pthread_mutex_unlock(&gx_lock);
+
+    if (emit) {
+        log_event("QUEUE_SUBMIT_METRICS",
+                  "calls=%llu failures=%llu last_result=%d avg_cpu_ns=%llu max_cpu_ns=%llu",
+                  (unsigned long long) calls, (unsigned long long) failures, (int) result,
+                  (unsigned long long) (calls == 0 ? 0 : total_ns / calls),
+                  (unsigned long long) max_ns);
+    }
+}
+
+static void record_queue_present_metrics(VkDevice device, uint64_t start_ns,
+                                         uint64_t elapsed_ns, VkResult result) {
+    uint64_t calls = 0, failures = 0, successes = 0;
+    uint64_t total_ns = 0, max_ns = 0, interval_samples = 0;
+    uint64_t interval_total_ns = 0, interval_max_ns = 0;
+    int emit = 0;
+    pthread_mutex_lock(&gx_lock);
+    GxDeviceRecord *record = find_device(device);
+    if (record != NULL) {
+        record->queue_present_calls++;
+        if (result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR) {
+            if (record->last_present_start_ns != 0 && start_ns >= record->last_present_start_ns) {
+                uint64_t interval_ns = start_ns - record->last_present_start_ns;
+                record->queue_present_interval_samples++;
+                record->queue_present_interval_total_ns += interval_ns;
+                if (interval_ns > record->queue_present_interval_max_ns)
+                    record->queue_present_interval_max_ns = interval_ns;
+            }
+            record->last_present_start_ns = start_ns;
+            record->queue_present_successes++;
+        } else {
+            record->queue_present_failures++;
+        }
+        record->queue_present_total_ns += elapsed_ns;
+        if (elapsed_ns > record->queue_present_max_ns)
+            record->queue_present_max_ns = elapsed_ns;
+        calls = record->queue_present_calls;
+        failures = record->queue_present_failures;
+        successes = record->queue_present_successes;
+        total_ns = record->queue_present_total_ns;
+        max_ns = record->queue_present_max_ns;
+        interval_samples = record->queue_present_interval_samples;
+        interval_total_ns = record->queue_present_interval_total_ns;
+        interval_max_ns = record->queue_present_interval_max_ns;
+        emit = calls == 1 || (successes != 0 && (successes % 60) == 0);
+    }
+    pthread_mutex_unlock(&gx_lock);
+
+    if (emit) {
+        log_event("QUEUE_PRESENT_METRICS",
+                  "calls=%llu successes=%llu failures=%llu last_result=%d avg_cpu_ns=%llu max_cpu_ns=%llu avg_call_interval_ns=%llu max_call_interval_ns=%llu metric=guest_present_call_cadence_not_display_fps",
+                  (unsigned long long) calls, (unsigned long long) successes,
+                  (unsigned long long) failures, (int) result,
+                  (unsigned long long) (calls == 0 ? 0 : total_ns / calls),
+                  (unsigned long long) max_ns,
+                  (unsigned long long) (interval_samples == 0 ? 0 : interval_total_ns / interval_samples),
+                  (unsigned long long) interval_max_ns);
+    }
+}
+
+static void VKAPI_CALL gx_get_device_queue(VkDevice device, uint32_t queue_family_index,
+                                           uint32_t queue_index, VkQueue *queue) {
+    GxDeviceRecord *record = snapshot_device(device);
+    if (record == NULL) {
+        if (queue != NULL) *queue = VK_NULL_HANDLE;
+        return;
+    }
+    PFN_vkGetDeviceQueue next_get =
+            (PFN_vkGetDeviceQueue) record->next_gdpa(device, "vkGetDeviceQueue");
+    free(record);
+    if (next_get == NULL) {
+        if (queue != NULL) *queue = VK_NULL_HANDLE;
+        log_event("GET_DEVICE_QUEUE_UNAVAILABLE", "");
+        return;
+    }
+    next_get(device, queue_family_index, queue_index, queue);
+    if (queue != NULL && *queue != VK_NULL_HANDLE) remember_queue(device, *queue);
+}
+
+static void VKAPI_CALL gx_get_device_queue2(VkDevice device,
+                                             const VkDeviceQueueInfo2 *queue_info,
+                                             VkQueue *queue) {
+    GxDeviceRecord *record = snapshot_device(device);
+    if (record == NULL) {
+        if (queue != NULL) *queue = VK_NULL_HANDLE;
+        return;
+    }
+    PFN_vkGetDeviceQueue2 next_get =
+            (PFN_vkGetDeviceQueue2) record->next_gdpa(device, "vkGetDeviceQueue2");
+    free(record);
+    if (next_get == NULL) {
+        if (queue != NULL) *queue = VK_NULL_HANDLE;
+        log_event("GET_DEVICE_QUEUE2_UNAVAILABLE", "");
+        return;
+    }
+    next_get(device, queue_info, queue);
+    if (queue != NULL && *queue != VK_NULL_HANDLE) remember_queue(device, *queue);
+}
+
+static VkResult VKAPI_CALL gx_queue_submit(VkQueue queue, uint32_t submit_count,
+                                           const VkSubmitInfo *submits, VkFence fence) {
+    GxQueueDispatch dispatch;
+    if (!snapshot_queue_dispatch(queue, &dispatch)) {
+        log_event("QUEUE_DISPATCH_UNAVAILABLE", "command=vkQueueSubmit");
+        return VK_ERROR_INITIALIZATION_FAILED;
+    }
+    PFN_vkQueueSubmit next_submit =
+            (PFN_vkQueueSubmit) dispatch.next_gdpa(dispatch.device, "vkQueueSubmit");
+    if (next_submit == NULL) return VK_ERROR_INITIALIZATION_FAILED;
+    uint64_t start_ns = monotonic_now_ns();
+    VkResult result = next_submit(queue, submit_count, submits, fence);
+    uint64_t end_ns = monotonic_now_ns();
+    record_queue_submit_metrics(dispatch.device,
+            end_ns >= start_ns ? end_ns - start_ns : 0, result);
+    return result;
+}
+
+static VkResult VKAPI_CALL gx_queue_submit2(VkQueue queue, uint32_t submit_count,
+                                            const VkSubmitInfo2 *submits, VkFence fence) {
+    GxQueueDispatch dispatch;
+    if (!snapshot_queue_dispatch(queue, &dispatch)) {
+        log_event("QUEUE_DISPATCH_UNAVAILABLE", "command=vkQueueSubmit2");
+        return VK_ERROR_INITIALIZATION_FAILED;
+    }
+    PFN_vkQueueSubmit2 next_submit =
+            (PFN_vkQueueSubmit2) dispatch.next_gdpa(dispatch.device, "vkQueueSubmit2");
+    if (next_submit == NULL) return VK_ERROR_EXTENSION_NOT_PRESENT;
+    uint64_t start_ns = monotonic_now_ns();
+    VkResult result = next_submit(queue, submit_count, submits, fence);
+    uint64_t end_ns = monotonic_now_ns();
+    record_queue_submit_metrics(dispatch.device,
+            end_ns >= start_ns ? end_ns - start_ns : 0, result);
+    return result;
+}
+
+static VkResult VKAPI_CALL gx_queue_submit2_khr(VkQueue queue, uint32_t submit_count,
+                                                const VkSubmitInfo2KHR *submits, VkFence fence) {
+    GxQueueDispatch dispatch;
+    if (!snapshot_queue_dispatch(queue, &dispatch)) {
+        log_event("QUEUE_DISPATCH_UNAVAILABLE", "command=vkQueueSubmit2KHR");
+        return VK_ERROR_INITIALIZATION_FAILED;
+    }
+    PFN_vkQueueSubmit2KHR next_submit =
+            (PFN_vkQueueSubmit2KHR) dispatch.next_gdpa(dispatch.device, "vkQueueSubmit2KHR");
+    if (next_submit == NULL) return VK_ERROR_EXTENSION_NOT_PRESENT;
+    uint64_t start_ns = monotonic_now_ns();
+    VkResult result = next_submit(queue, submit_count, submits, fence);
+    uint64_t end_ns = monotonic_now_ns();
+    record_queue_submit_metrics(dispatch.device,
+            end_ns >= start_ns ? end_ns - start_ns : 0, result);
+    return result;
+}
+
+static VkResult VKAPI_CALL gx_queue_present_khr(VkQueue queue,
+                                                 const VkPresentInfoKHR *present_info) {
+    GxQueueDispatch dispatch;
+    if (!snapshot_queue_dispatch(queue, &dispatch)) {
+        log_event("QUEUE_DISPATCH_UNAVAILABLE", "command=vkQueuePresentKHR");
+        return VK_ERROR_INITIALIZATION_FAILED;
+    }
+    PFN_vkQueuePresentKHR next_present =
+            (PFN_vkQueuePresentKHR) dispatch.next_gdpa(dispatch.device, "vkQueuePresentKHR");
+    if (next_present == NULL) return VK_ERROR_EXTENSION_NOT_PRESENT;
+    uint64_t start_ns = monotonic_now_ns();
+    VkResult result = next_present(queue, present_info);
+    uint64_t end_ns = monotonic_now_ns();
+    record_queue_present_metrics(dispatch.device, start_ns,
+            end_ns >= start_ns ? end_ns - start_ns : 0, result);
+    return result;
+}
+
 static PFN_vkVoidFunction VKAPI_CALL gx_get_instance_proc_addr(VkInstance instance,
                                                                 const char *name) {
     if (name == NULL) return NULL;
@@ -555,6 +829,37 @@ static PFN_vkVoidFunction VKAPI_CALL gx_get_device_proc_addr(VkDevice device,
 
     GxDeviceRecord *record = snapshot_device(device);
     if (record == NULL) return NULL;
+
+    if (strcmp(name, "vkGetDeviceQueue") == 0) {
+        free(record);
+        return (PFN_vkVoidFunction) gx_get_device_queue;
+    }
+    if (strcmp(name, "vkGetDeviceQueue2") == 0) {
+        PFN_vkVoidFunction next = record->next_gdpa(device, name);
+        free(record);
+        return next != NULL ? (PFN_vkVoidFunction) gx_get_device_queue2 : NULL;
+    }
+    if (strcmp(name, "vkQueueSubmit") == 0) {
+        PFN_vkVoidFunction next = record->next_gdpa(device, name);
+        free(record);
+        return next != NULL ? (PFN_vkVoidFunction) gx_queue_submit : NULL;
+    }
+    if (strcmp(name, "vkQueueSubmit2") == 0) {
+        PFN_vkVoidFunction next = record->next_gdpa(device, name);
+        free(record);
+        return next != NULL ? (PFN_vkVoidFunction) gx_queue_submit2 : NULL;
+    }
+    if (strcmp(name, "vkQueueSubmit2KHR") == 0) {
+        PFN_vkVoidFunction next = record->next_gdpa(device, name);
+        free(record);
+        return next != NULL ? (PFN_vkVoidFunction) gx_queue_submit2_khr : NULL;
+    }
+    if (strcmp(name, "vkQueuePresentKHR") == 0) {
+        PFN_vkVoidFunction next = record->next_gdpa(device, name);
+        free(record);
+        return next != NULL ? (PFN_vkVoidFunction) gx_queue_present_khr : NULL;
+    }
+
     PFN_vkVoidFunction next = record->next_gdpa(device, name);
     free(record);
     return next;
