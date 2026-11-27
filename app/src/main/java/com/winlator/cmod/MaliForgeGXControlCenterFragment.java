@@ -33,6 +33,7 @@ import com.winlator.cmod.maliforge.gx.GXNativeRuntime;
 import com.winlator.cmod.maliforge.gx.GXVulkanDeviceBootstrap;
 import com.winlator.cmod.maliforge.gx.GXVulkanCommandTransferTest;
 import com.winlator.cmod.maliforge.gx.GXVulkanImageClearTest;
+import com.winlator.cmod.maliforge.gx.GXVulkanRenderPassTest;
 import com.winlator.cmod.maliforge.gx.GXRuntimeDiagnostics;
 import com.winlator.cmod.maliforge.gx.MaliForgeGXEngine;
 
