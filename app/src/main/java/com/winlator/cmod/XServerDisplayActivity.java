@@ -91,6 +91,7 @@ import com.winlator.cmod.core.WineThemeManager;
 import com.winlator.cmod.core.WineUtils;
 import com.winlator.cmod.inputcontrols.ControlsProfile;
 import com.winlator.cmod.inputcontrols.GameProfileManager;
+import com.winlator.cmod.execution.ExecutionManager;
 import com.winlator.cmod.graphics.GraphicsCapabilities;
 import com.winlator.cmod.graphics.GraphicsCapabilityDetector;
 import com.winlator.cmod.graphics.GraphicsFallbackManager;
@@ -1486,6 +1487,23 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
 
 
         GraphicsCapabilities graphicsCapabilities = GraphicsCapabilityDetector.detect(this);
+        if (shortcut != null && shortcut.path != null && !shortcut.path.trim().isEmpty()) {
+            File hostExecutable = new File(shortcut.path);
+            if (hostExecutable.isFile() && hostExecutable.canRead()) {
+                try {
+                    // Only inspect shortcuts that resolve to a readable host file; DOS paths from .desktop
+                    // entries are deliberately not treated as Android filesystem paths.
+                    ExecutionManager.Analysis preflight = ExecutionManager.analyze(
+                            hostExecutable, emulator, false, wineInfo != null && wineInfo.isArm64EC());
+                    Log.i(TAG, "Windows EXE preflight: " + preflight.getSummary());
+                    if (!preflight.runtime.supported) {
+                        Log.w(TAG, "EXE runtime preflight is conservative; existing launch behavior is unchanged.");
+                    }
+                } catch (Exception e) {
+                    Log.w(TAG, "Skipping PE preflight for " + hostExecutable.getName() + ": " + e.getMessage());
+                }
+            }
+        }
         String requestedDxWrapper = dxwrapper;
         dxwrapper = GraphicsFallbackManager.selectSafeDxWrapper(dxwrapper, graphicsCapabilities);
         if (!java.util.Objects.equals(requestedDxWrapper, dxwrapper)) {
