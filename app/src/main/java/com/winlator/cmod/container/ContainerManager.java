@@ -7,6 +7,7 @@ import android.util.Log;
 
 import com.winlator.cmod.R;
 import com.winlator.cmod.contents.ContentsManager;
+import com.winlator.cmod.core.AppExecutors;
 import com.winlator.cmod.core.Callback;
 import com.winlator.cmod.core.FileUtils;
 import com.winlator.cmod.core.MSLink;
@@ -29,9 +30,10 @@ import org.json.JSONObject;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.concurrent.Executors;
 
 public class ContainerManager {
+    private static final Handler MAIN_HANDLER = new Handler(Looper.getMainLooper());
+
     private final ArrayList<Container> containers = new ArrayList<>();
     private final File homeDir;
     private final Context context;
@@ -105,26 +107,37 @@ public class ContainerManager {
     }
 
     public void createContainerAsync(final JSONObject data, ContentsManager contentsManager, Callback<Container> callback) {
-        final Handler handler = new Handler();
-        Executors.newSingleThreadExecutor().execute(() -> {
-            final Container container = createContainer(data, contentsManager);
-            handler.post(() -> callback.call(container));
+        AppExecutors.executeSerialIo(() -> {
+            Container created = null;
+            try {
+                created = createContainer(data, contentsManager);
+            } catch (Exception error) {
+                Log.e("ContainerManager", "Container creation failed", error);
+            }
+            final Container result = created;
+            if (callback != null) MAIN_HANDLER.post(() -> callback.call(result));
         });
     }
 
     public void duplicateContainerAsync(Container container, Runnable callback) {
-        final Handler handler = new Handler();
-        Executors.newSingleThreadExecutor().execute(() -> {
-            duplicateContainer(container);
-            handler.post(callback);
+        AppExecutors.executeSerialIo(() -> {
+            try {
+                duplicateContainer(container);
+            } catch (Exception error) {
+                Log.e("ContainerManager", "Container duplication failed", error);
+            }
+            if (callback != null) MAIN_HANDLER.post(callback);
         });
     }
 
     public void removeContainerAsync(Container container, Runnable callback) {
-        final Handler handler = new Handler();
-        Executors.newSingleThreadExecutor().execute(() -> {
-            removeContainer(container);
-            handler.post(callback);
+        AppExecutors.executeSerialIo(() -> {
+            try {
+                removeContainer(container);
+            } catch (Exception error) {
+                Log.e("ContainerManager", "Container removal failed", error);
+            }
+            if (callback != null) MAIN_HANDLER.post(callback);
         });
     }
 

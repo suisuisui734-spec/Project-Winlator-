@@ -430,6 +430,7 @@ public class SettingsFragment extends Fragment {
         final CheckBox cbPreferBigCores = view.findViewById(R.id.CBPreferBigCores);
         final CheckBox cbHighRefreshRate = view.findViewById(R.id.CBHighRefreshRate);
         final CheckBox cbSustainedPerformance = view.findViewById(R.id.CBSustainedPerformance);
+        final CheckBox cbThermalGuard = view.findViewById(R.id.CBThermalGuard);
         final CheckBox cbSamsungBoost = view.findViewById(R.id.CBSamsungBoost);
         final View llSamsungBoost = view.findViewById(R.id.LLSamsungBoost);
 
@@ -438,9 +439,15 @@ public class SettingsFragment extends Fragment {
         if (cbPreferBigCores != null) cbPreferBigCores.setChecked(preferences.getBoolean(com.winlator.cmod.perf.PerformanceManager.PREF_PREFER_BIG_CORES, false));
         if (cbHighRefreshRate != null) cbHighRefreshRate.setChecked(preferences.getBoolean("high_refresh_rate_mode", false));
         if (cbSustainedPerformance != null) cbSustainedPerformance.setChecked(preferences.getBoolean(com.winlator.cmod.perf.PerformanceManager.PREF_SUSTAINED_PERFORMANCE, false));
+        if (cbThermalGuard != null) cbThermalGuard.setChecked(preferences.getBoolean(com.winlator.cmod.perf.PerformanceManager.PREF_THERMAL_GUARD, true));
         if (cbSamsungBoost != null) cbSamsungBoost.setChecked(preferences.getBoolean(com.winlator.cmod.perf.PerformanceManager.PREF_SAMSUNG_PERF_BOOST, true));
         if (llSamsungBoost != null) {
             llSamsungBoost.setVisibility(com.winlator.cmod.perf.SamsungSPerfDriver.isSamsungDevice() ? View.VISIBLE : View.GONE);
+        }
+
+        TextView tvDeviceProfile = view.findViewById(R.id.TVHelioG100DeviceInfo);
+        if (tvDeviceProfile != null) {
+            tvDeviceProfile.setText(com.winlator.cmod.core.DeviceProfileInfo.buildSummary(context));
         }
 
         view.findViewById(R.id.BTReInstallImagefs).setOnClickListener(v -> {
@@ -467,6 +474,7 @@ public class SettingsFragment extends Fragment {
             if (cbPreferBigCores != null) editor.putBoolean(com.winlator.cmod.perf.PerformanceManager.PREF_PREFER_BIG_CORES, cbPreferBigCores.isChecked());
             if (cbHighRefreshRate != null) editor.putBoolean("high_refresh_rate_mode", cbHighRefreshRate.isChecked());
             if (cbSustainedPerformance != null) editor.putBoolean(com.winlator.cmod.perf.PerformanceManager.PREF_SUSTAINED_PERFORMANCE, cbSustainedPerformance.isChecked());
+            if (cbThermalGuard != null) editor.putBoolean(com.winlator.cmod.perf.PerformanceManager.PREF_THERMAL_GUARD, cbThermalGuard.isChecked());
             if (cbSamsungBoost != null) editor.putBoolean(com.winlator.cmod.perf.PerformanceManager.PREF_SAMSUNG_PERF_BOOST, cbSamsungBoost.isChecked());
 
             editor.putString("downloadable_contents_url", etDownloadableContentsURL.getText().toString());

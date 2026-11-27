@@ -83,6 +83,9 @@ preBuild.dependsOn(downloadAssets)
 
 android {
     namespace 'com.winlator.cmod'
+    buildFeatures {
+        buildConfig true
+    }
     // Keep compileSdk from your current config. If you want to match Termux-X11, you could set to 34.
     compileSdk 34
     buildToolsVersion "35.0.0"
@@ -166,17 +169,17 @@ android {
         standard {
             dimension "version"
             applicationId "com.winlator.mali"
-            resValue "string", "app_name", "Winlator Mali"
+            resValue "string", "app_name", "Project Winlator"
         }
         ludashi {
             dimension "version"
             applicationId "com.ludashi.benchmark"
-            resValue "string", "app_name", "Winlator Mali Ludashi"
+            resValue "string", "app_name", "Project Winlator Ludashi"
         }
         antutu {
             dimension "version"
             applicationId "com.antutu.ABenchMark"
-            resValue "string", "app_name", "Winlator Mali AnTuTu"
+            resValue "string", "app_name", "Project Winlator AnTuTu"
         }
     }
 
@@ -227,6 +230,9 @@ dependencies {
     implementation 'com.kohlschutter.junixsocket:junixsocket-native-common:2.6.0'
     implementation 'com.caverock:androidsvg-aar:1.4'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.11.0'
+
+    // JUnit is already declared in the Gradle version catalog.
+    testImplementation libs.junit
 }
 
 
