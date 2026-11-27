@@ -664,6 +664,10 @@ E.g. <b>META</b> for <i>META key</i>, \n
     <string name="install_drivers">Install Drivers</string>
     <string name="install_drivers_message">You will now be prompted to pick a driver. These must be the same ones used in other emulators like Yuzu, Dolphin, Citra, etc.</string>
     <string name="install_drivers_warning">Be warned that because of limitations of current PC emulators, Qualcomm Drivers may not work on chipsets below 8 Gen2 without getting patched.</string>
+    <string name="panvk_optional_driver_info">Optional third-party driver: PanVK is a Mesa-based Vulkan driver for supported Mali GPUs. It is separate from MaliForge GX. Review the upstream device list and Android 12+ 64-bit requirements before importing. Keep the System driver available as a fallback.</string>
+    <string name="open_panvk_releases">View official PanVK releases</string>
+    <string name="custom_driver_install_success">Custom Vulkan driver installed. Select it per container in Graphics Driver Configuration.</string>
+    <string name="custom_driver_install_failed">Driver ZIP rejected. Check its metadata and ARM64 library, then try again.</string>
     <string name="enable_vulkan_api_dump">Enable dumping of Vulkan api calls to file.</string>
     <string name="dll_emulator">32bit Emulator</string>
     <string name="open_with_android_browser">Open Android Browser in Wine</string>

@@ -11,6 +11,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.DividerItemDecoration;
@@ -25,6 +26,8 @@ public class AdrenotoolsFragment extends Fragment {
     private AdrenotoolsManager adrenotoolsManager;
     private RecyclerView recyclerView;
     private TextView tvEmpty;
+    private View btInstallDriver;
+    private boolean isInstallingDriver;
 
     private void updateEmptyState() {
         if (tvEmpty == null || recyclerView.getAdapter() == null) return;
@@ -45,7 +48,19 @@ public class AdrenotoolsFragment extends Fragment {
         recyclerView.setLayoutManager(new LinearLayoutManager(recyclerView.getContext()));
         recyclerView.setAdapter(new DriversAdapter(adrenotoolsManager.enumarateInstalledDrivers()));
         updateEmptyState();
-        View btInstallDriver = layout.findViewById(R.id.BTInstallDriver);
+        btInstallDriver = layout.findViewById(R.id.BTInstallDriver);
+        View btPanVKRelease = layout.findViewById(R.id.BTPanVKRelease);
+        btPanVKRelease.setOnClickListener(v -> {
+            Intent intent = new Intent(Intent.ACTION_VIEW,
+                    Uri.parse("https://github.com/JimVulkan/mali-panvk/releases"));
+            try {
+                startActivity(intent);
+            } catch (android.content.ActivityNotFoundException exception) {
+                Toast.makeText(getContext(), "No browser is available to open the PanVK release page.",
+                        Toast.LENGTH_LONG).show();
+            }
+        });
+
         btInstallDriver.setOnClickListener((v) -> {
             ContentDialog.confirm(getContext(), getString(R.string.install_drivers_message) + " " + getString(R.string.install_drivers_warning), () -> {
                 Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
@@ -66,14 +81,35 @@ public class AdrenotoolsFragment extends Fragment {
     
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == MainActivity.OPEN_FILE_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
-            Uri uri = data.getData();
+        if (requestCode != MainActivity.OPEN_FILE_REQUEST_CODE || resultCode != Activity.RESULT_OK
+                || data == null || data.getData() == null || isInstallingDriver) return;
+
+        Uri uri = data.getData();
+        isInstallingDriver = true;
+        if (btInstallDriver != null) btInstallDriver.setEnabled(false);
+
+        Thread installer = new Thread(() -> {
             String driver = adrenotoolsManager.installDriver(uri);
-            if (!driver.isEmpty())
-                ((DriversAdapter)recyclerView.getAdapter()).addItem(driver);
-        }
-     }       
-    
+            Activity activity = getActivity();
+            if (activity == null) return;
+            activity.runOnUiThread(() -> {
+                isInstallingDriver = false;
+                if (!isAdded() || recyclerView == null || recyclerView.getAdapter() == null) return;
+                if (btInstallDriver != null) btInstallDriver.setEnabled(true);
+
+                if (!driver.isEmpty()) {
+                    ((DriversAdapter) recyclerView.getAdapter()).addItem(driver);
+                    Toast.makeText(getContext(), R.string.custom_driver_install_success,
+                            Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(getContext(), R.string.custom_driver_install_failed,
+                            Toast.LENGTH_LONG).show();
+                }
+            });
+        }, "AdrenotoolsDriverInstaller");
+        installer.start();
+    }
+
     private class DriversAdapter extends RecyclerView.Adapter<DriversAdapter.ViewHolder> {
         private ArrayList<String> driversList;
 
