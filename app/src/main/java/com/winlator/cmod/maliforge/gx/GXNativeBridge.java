@@ -22,6 +22,7 @@ final class GXNativeBridge {
     static String abi() { return LOADED ? safe(nativeGetAbi()) : "Unavailable"; }
     static int api() { return LOADED ? nativeGetAndroidApiLevel() : -1; }
     static String diagnostics() { return LOADED ? safe(nativeGetDiagnostics()) : LOAD_ERROR; }
+    static String probeHostVulkan() { return LOADED ? safe(nativeProbeHostVulkan()) : ""; }
     static void shutdown() { if (LOADED) nativeShutdown(); }
     private static String safe(String value) {
         return value == null || value.trim().isEmpty() ? "Unavailable" : value;
@@ -32,5 +33,6 @@ final class GXNativeBridge {
     private static native String nativeGetAbi();
     private static native int nativeGetAndroidApiLevel();
     private static native String nativeGetDiagnostics();
+    private static native String nativeProbeHostVulkan();
     private static native void nativeShutdown();
 }
