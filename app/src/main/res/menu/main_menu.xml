@@ -40,6 +40,10 @@
                     android:icon="@drawable/ic_graphics_management"
                     android:title="@string/manage_graphics_drivers" />
                 <item
+                    android:id="@+id/main_menu_maliforge_gx"
+                    android:icon="@drawable/ic_graphics_management"
+                    android:title="MaliForge GX Control Center" />
+                <item
                     android:id="@+id/main_menu_adrenotools_gpu_drivers"
                     android:icon="@drawable/ic_graphics_enhancements"
                     android:title="@string/adrenotools_gpu_drivers" />
