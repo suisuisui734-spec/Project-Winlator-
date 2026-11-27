@@ -60,7 +60,11 @@ int main(void) {
     vkGetPhysicalDeviceQueueFamilyProperties(devices[0], &familyCount, families);
     uint32_t family = UINT32_MAX;
     for (uint32_t n = 0; n < familyCount; ++n) {
-        if (families[n].queueCount > 0) { family = n; break; }
+        if (families[n].queueCount > 0
+                && (families[n].queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0) {
+            family = n;
+            break;
+        }
     }
     free(families);
     if (family == UINT32_MAX) { free(devices); vkDestroyInstance(instance, NULL); return 15; }
@@ -87,8 +91,99 @@ int main(void) {
         vkDestroyInstance(instance, NULL);
         return 16;
     }
+    VkQueue queue = VK_NULL_HANDLE;
+    vkGetDeviceQueue(device, family, 0, &queue);
+    if (queue == VK_NULL_HANDLE) {
+        fprintf(stderr, "vkGetDeviceQueue returned a null queue\n");
+        vkDestroyDevice(device, NULL);
+        vkDestroyInstance(instance, NULL);
+        return 18;
+    }
+
+    VkCommandPoolCreateInfo poolInfo;
+    memset(&poolInfo, 0, sizeof(poolInfo));
+    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    poolInfo.queueFamilyIndex = family;
+    VkCommandPool commandPool = VK_NULL_HANDLE;
+    result = vkCreateCommandPool(device, &poolInfo, NULL, &commandPool);
+    if (result != VK_SUCCESS) {
+        fprintf(stderr, "vkCreateCommandPool failed: %d\n", (int) result);
+        vkDestroyDevice(device, NULL);
+        vkDestroyInstance(instance, NULL);
+        return 19;
+    }
+
+    VkCommandBufferAllocateInfo commandInfo;
+    memset(&commandInfo, 0, sizeof(commandInfo));
+    commandInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    commandInfo.commandPool = commandPool;
+    commandInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    commandInfo.commandBufferCount = 1;
+    VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
+    result = vkAllocateCommandBuffers(device, &commandInfo, &commandBuffer);
+    if (result != VK_SUCCESS) {
+        fprintf(stderr, "vkAllocateCommandBuffers failed: %d\n", (int) result);
+        vkDestroyCommandPool(device, commandPool, NULL);
+        vkDestroyDevice(device, NULL);
+        vkDestroyInstance(instance, NULL);
+        return 20;
+    }
+
+    VkCommandBufferBeginInfo beginInfo;
+    memset(&beginInfo, 0, sizeof(beginInfo));
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
+    if (result == VK_SUCCESS) result = vkEndCommandBuffer(commandBuffer);
+    if (result != VK_SUCCESS) {
+        fprintf(stderr, "Command buffer record failed: %d\n", (int) result);
+        vkDestroyCommandPool(device, commandPool, NULL);
+        vkDestroyDevice(device, NULL);
+        vkDestroyInstance(instance, NULL);
+        return 21;
+    }
+
+    VkFenceCreateInfo fenceInfo;
+    memset(&fenceInfo, 0, sizeof(fenceInfo));
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    VkFence fence = VK_NULL_HANDLE;
+    result = vkCreateFence(device, &fenceInfo, NULL, &fence);
+    if (result != VK_SUCCESS) {
+        fprintf(stderr, "vkCreateFence failed: %d\n", (int) result);
+        vkDestroyCommandPool(device, commandPool, NULL);
+        vkDestroyDevice(device, NULL);
+        vkDestroyInstance(instance, NULL);
+        return 22;
+    }
+
+    VkSubmitInfo submitInfo;
+    memset(&submitInfo, 0, sizeof(submitInfo));
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
+    result = vkQueueSubmit(queue, 1, &submitInfo, fence);
+    if (result != VK_SUCCESS) {
+        fprintf(stderr, "vkQueueSubmit failed: %d\n", (int) result);
+        vkDestroyFence(device, fence, NULL);
+        vkDestroyCommandPool(device, commandPool, NULL);
+        vkDestroyDevice(device, NULL);
+        vkDestroyInstance(instance, NULL);
+        return 23;
+    }
+    result = vkWaitForFences(device, 1, &fence, VK_TRUE, 10000000000ULL);
+    if (result != VK_SUCCESS) {
+        fprintf(stderr, "vkWaitForFences failed: %d\n", (int) result);
+        vkDestroyFence(device, fence, NULL);
+        vkDestroyCommandPool(device, commandPool, NULL);
+        vkDestroyDevice(device, NULL);
+        vkDestroyInstance(instance, NULL);
+        return 24;
+    }
+
+    vkDestroyFence(device, fence, NULL);
+    vkDestroyCommandPool(device, commandPool, NULL);
     vkDestroyDevice(device, NULL);
     vkDestroyInstance(instance, NULL);
-    puts("Vulkan instance/device lifecycle succeeded.");
+    puts("Vulkan instance/device and command submission lifecycle succeeded.");
     return 0;
 }

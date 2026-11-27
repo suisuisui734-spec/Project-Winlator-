@@ -39,6 +39,10 @@ MaliForge GX is the graphics diagnostics and native-runtime integration workstre
 | Host Vulkan diagnostics and GPU/driver information | Implemented in code; CI validation |
 | Vulkan instance creation and GPU/queue-family discovery | Implemented |
 | Minimal host Vulkan logical-device and graphics-queue bootstrap | Implemented diagnostic/bootstrap path |
+| Host Vulkan command-buffer buffer-copy smoke test | Implemented in native runtime; device result depends on execution |
+| Host Vulkan offscreen image clear/read-back smoke test | Implemented in native runtime; device result depends on execution |
+| Host Vulkan color-attachment render-pass execution/read-back test | Implemented in native runtime; device result depends on execution |
+| Guest Vulkan queue-submit/present pass-through telemetry | Implemented in diagnostic layer; per-game results require opt-in launch and hardware runtime |
 | Diagnostics report copy/share | Implemented |
 | Guest Vulkan renderer / complete game rendering path | Not complete or verified |
 | Surface/swapchain, shaders, full guest ICD integration | Not yet complete |
@@ -96,7 +100,9 @@ Preserve upstream source modifications, drivers, wrappers, and existing defaults
 - [x] Diagnostics report copy/share
 - [ ] Full dashboard and library redesign
 - [ ] Profiles, recovery, troubleshooting, storage and controls features
-- [ ] Offscreen Vulkan command-buffer and shader/pipeline test harness
+- [x] Host Vulkan command-buffer transfer smoke test (buffer copy, queue submit, fence and data verification)
+- [x] Host Vulkan image allocation/layout-transition/clear/read-back smoke test
+- [ ] Offscreen Vulkan shader/graphics-pipeline test harness and game-renderer integration
 - [ ] Renderer/runtime validation on physical devices
 - [ ] Publish verified releases and device-specific test reports
 

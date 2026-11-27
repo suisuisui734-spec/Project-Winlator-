@@ -63,7 +63,12 @@ if [[ "${1:-}" == "--smoke-test" ]]; then
   rm -f "$MALIFORGE_GX_LAYER_LOG"
   "$BUILD_DIR/gx_vulkan_layer_smoke"
 
-  for event in INSTANCE_CREATED PHYSICAL_DEVICES_ENUMERATED PHYSICAL_DEVICE_GROUPS_ENUMERATED DEVICE_CREATED DEVICE_DESTROYED INSTANCE_DESTROYED; do
+  grep -q "event=QUEUE_SUBMIT_METRICS.*calls=1.*failures=0" "$MALIFORGE_GX_LAYER_LOG" || {
+    echo "Expected Vulkan queue-submit telemetry event missing" >&2
+    cat "$MALIFORGE_GX_LAYER_LOG" >&2 || true
+    exit 1
+  }
+  for event in INSTANCE_CREATED PHYSICAL_DEVICES_ENUMERATED PHYSICAL_DEVICE_GROUPS_ENUMERATED DEVICE_CREATED QUEUE_SUBMIT_METRICS DEVICE_DESTROYED INSTANCE_DESTROYED; do
     grep -q "event=$event" "$MALIFORGE_GX_LAYER_LOG" || {
       echo "Expected Vulkan layer event missing: $event" >&2
       cat "$MALIFORGE_GX_LAYER_LOG" >&2 || true
