@@ -15,12 +15,26 @@ required_branches=(
   "feature/maliforge-gx-stage23-release"
 )
 
+count_in_section() {
+  local section="$1"
+  local branch="$2"
+  awk -v wanted_section="$section" -v wanted_branch="$branch" '
+    $0 == "  push:" { current_section = "push"; next }
+    $0 == "  pull_request:" { current_section = "pull_request"; next }
+    $0 == "  workflow_dispatch:" { current_section = ""; next }
+    current_section == wanted_section && $0 == "      - " wanted_branch { count++ }
+    END { print count + 0 }
+  ' "$workflow"
+}
+
 for branch in "${required_branches[@]}"; do
-  count="$(grep -F -- "- ${branch}" "$workflow" | wc -l | tr -d ' ')"
-  if [[ "$count" -lt 2 ]]; then
-    echo "Workflow must include ${branch} in both push and pull_request filters (found ${count})." >&2
-    exit 1
-  fi
+  for section in push pull_request; do
+    count="$(count_in_section "$section" "$branch")"
+    if [[ "$count" -ne 1 ]]; then
+      echo "Workflow must include ${branch} exactly once in ${section} filters (found ${count})." >&2
+      exit 1
+    fi
+  done
 done
 
 required_markers=(
@@ -43,4 +57,4 @@ for marker in "${required_markers[@]}"; do
   fi
 done
 
-echo "MaliForge GX CI coverage validated for Stages 19–23."
+echo "MaliForge GX CI coverage validated for Stages 19–23 in both push and pull_request filters."
