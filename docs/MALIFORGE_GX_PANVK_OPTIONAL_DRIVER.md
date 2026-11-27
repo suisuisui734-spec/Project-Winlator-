@@ -35,7 +35,7 @@ The importer validates ZIP paths, limits the number of entries and expanded size
 
 - PanVK is experimental third-party software. The upstream project is not affiliated with this Winlator fork, Arm, MediaTek, or MaliForge GX.
 - A supported GPU name does not guarantee compatibility with a particular phone's kernel, Android build, window system, Vulkan wrapper, or game.
-- The upstream release documents Direct3D 12 limits on Mali-G57 (feature level up to 11_1), no mesh shaders on Bifrost/Valhall hardware, and other feature limitations.
+- The upstream release documents Direct3D 12 limitations: sparse resources are not supported, the maximum level is 11_1 where the required features are available, and vertex shader stores are disabled on Mali-G57 through G720. Mesh shaders are also unavailable on Bifrost/Valhall hardware.
 - No FPS increase, crash-free operation, or game compatibility is guaranteed. Compare behavior with the System driver and revert the container setting if a game fails to start or renders incorrectly.
 - The current MaliForge GX native renderer remains unavailable until this project supplies and validates its own renderer/ICD and runtime initialization path.
 
