@@ -24,7 +24,7 @@ public class GXHostVulkanProbeTest {
         assertTrue(result.available);
         assertEquals(1, result.devices.size());
         assertEquals("Mali-G57", result.devices.get(0).name);
-        assertEquals(1600, result.devices.get(0).vendorId);
+        assertEquals(5045, result.devices.get(0).vendorId);
         assertTrue(result.devices.get(0).graphicsQueue);
         assertTrue(result.devices.get(0).computeQueue);
         assertTrue(result.devices.get(0).swapchain);
@@ -49,6 +49,16 @@ public class GXHostVulkanProbeTest {
                         + "\"vkResult\":0,\"deviceCount\":1,\"devices\":[]}");
         assertFalse(result.available);
         assertEquals("invalid_response", result.status);
+    }
+
+    @Test
+    public void successWithMismatchedDeviceCountIsRejected() {
+        GXHostVulkanProbe.Result result = GXHostVulkanProbe.parse(
+                "{\"status\":\"available\",\"stage\":\"complete\","
+                        + "\"vkResult\":0,\"deviceCount\":2,\"devices\":[{}]}");
+        assertFalse(result.available);
+        assertEquals("invalid_response", result.status);
+        assertTrue(result.devices.isEmpty());
     }
 
     @Test
