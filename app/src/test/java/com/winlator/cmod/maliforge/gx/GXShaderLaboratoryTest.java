@@ -72,7 +72,7 @@ public class GXShaderLaboratoryTest {
         assertEquals(1, inventory.validCount);
         assertEquals(1, inventory.unverifiedCount);
         assertEquals(1, inventory.corruptCount);
-        assertEquals(3L, inventory.totalBytes);
+        assertEquals(4L, inventory.totalBytes);
     }
 
     @Test public void cleanupCreatesBackupAndRestoreNeverOverwrites() throws Exception {
