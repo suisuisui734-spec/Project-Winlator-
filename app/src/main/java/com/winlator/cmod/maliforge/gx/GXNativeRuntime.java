@@ -27,9 +27,24 @@ public final class GXNativeRuntime {
             int api = GXNativeBridge.api();
             String detail = GXNativeBridge.diagnostics();
             GXHostVulkanProbe.Result hostProbe = GXHostVulkanProbe.unavailable("Native Vulkan probe was not run");
+            GXVulkanDeviceBootstrap.Result deviceBootstrap =
+                    GXVulkanDeviceBootstrap.unavailable("Logical-device bootstrap was not run");
             if (result == ERROR_NONE && state == STATE_READY) {
                 try {
                     hostProbe = GXHostVulkanProbe.parse(GXNativeBridge.probeHostVulkan());
+                    if (hostProbe.available) {
+                        try {
+                            deviceBootstrap = GXVulkanDeviceBootstrap.parse(
+                                    GXNativeBridge.initializeHostVulkanDevice());
+                        } catch (UnsatisfiedLinkError | RuntimeException deviceError) {
+                            deviceBootstrap = GXVulkanDeviceBootstrap.unavailable(
+                                    "Native Vulkan device bootstrap failed: "
+                                            + deviceError.getClass().getSimpleName());
+                        }
+                    } else {
+                        deviceBootstrap = GXVulkanDeviceBootstrap.unavailable(
+                                "Host Vulkan physical-device probe did not pass.");
+                    }
                 } catch (UnsatisfiedLinkError | RuntimeException probeError) {
                     hostProbe = GXHostVulkanProbe.unavailable("Native Vulkan probe failed: "
                             + probeError.getClass().getSimpleName());
@@ -38,19 +53,22 @@ public final class GXNativeRuntime {
             if (result != ERROR_NONE || state != STATE_READY) {
                 if (error == ERROR_NONE) error = result == ERROR_NONE
                         ? ERROR_NATIVE_INITIALIZATION : result;
-                snapshot = Snapshot.failure(state, error, detail, abi, api, hostProbe);
-            } else snapshot = Snapshot.ready(detail, abi, api, hostProbe);
+                snapshot = Snapshot.failure(state, error, detail, abi, api, hostProbe, deviceBootstrap);
+            } else snapshot = Snapshot.ready(detail, abi, api, hostProbe, deviceBootstrap);
         } catch (UnsatisfiedLinkError | RuntimeException e) {
             snapshot = Snapshot.failure(STATE_FAILED, ERROR_NATIVE_INITIALIZATION,
                     e.getClass().getSimpleName() + ": "
                     + (e.getMessage() == null ? "No details" : e.getMessage()),
-                    "Unavailable", -1, GXHostVulkanProbe.unavailable("Native initialization failed"));
+                    "Unavailable", -1, GXHostVulkanProbe.unavailable("Native initialization failed"),
+                    GXVulkanDeviceBootstrap.unavailable("Native initialization failed"));
         }
         return snapshot;
     }
 
     public Snapshot getSnapshot() { return snapshot; }
     public synchronized void shutdown() {
+        try { GXNativeBridge.shutdownHostVulkanDevice(); }
+        catch (UnsatisfiedLinkError | RuntimeException ignored) { }
         try { GXNativeBridge.shutdown(); }
         catch (UnsatisfiedLinkError | RuntimeException ignored) { }
         snapshot = Snapshot.empty();
@@ -73,10 +91,12 @@ public final class GXNativeRuntime {
         public final int state, errorCode, androidApiLevel;
         public final String diagnostics, abi;
         public final GXHostVulkanProbe.Result hostVulkanProbe;
+        public final GXVulkanDeviceBootstrap.Result vulkanDeviceBootstrap;
         public final boolean nativeBridgeReady;
         public final boolean graphicsBackendAvailable;
         private Snapshot(int state, int error, String detail, String abi, int api, boolean ready,
-                         GXHostVulkanProbe.Result hostVulkanProbe) {
+                         GXHostVulkanProbe.Result hostVulkanProbe,
+                         GXVulkanDeviceBootstrap.Result vulkanDeviceBootstrap) {
             this.state = state;
             errorCode = error;
             diagnostics = detail == null ? "" : detail;
@@ -86,19 +106,27 @@ public final class GXNativeRuntime {
             graphicsBackendAvailable = false;
             this.hostVulkanProbe = hostVulkanProbe == null
                     ? GXHostVulkanProbe.unavailable("No probe result") : hostVulkanProbe;
+            this.vulkanDeviceBootstrap = vulkanDeviceBootstrap == null
+                    ? GXVulkanDeviceBootstrap.unavailable("No device bootstrap result")
+                    : vulkanDeviceBootstrap;
         }
         private static Snapshot empty() {
             return new Snapshot(STATE_UNINITIALIZED, ERROR_NONE,
                     "Native bridge has not been initialized", "Unknown", -1, false,
-                    GXHostVulkanProbe.unavailable("Native bridge has not been initialized"));
+                    GXHostVulkanProbe.unavailable("Native bridge has not been initialized"),
+                    GXVulkanDeviceBootstrap.unavailable("Native bridge has not been initialized"));
         }
         private static Snapshot ready(String detail, String abi, int api,
-                                      GXHostVulkanProbe.Result hostVulkanProbe) {
-            return new Snapshot(STATE_READY, ERROR_NONE, detail, abi, api, true, hostVulkanProbe);
+                                      GXHostVulkanProbe.Result hostVulkanProbe,
+                                      GXVulkanDeviceBootstrap.Result vulkanDeviceBootstrap) {
+            return new Snapshot(STATE_READY, ERROR_NONE, detail, abi, api, true,
+                    hostVulkanProbe, vulkanDeviceBootstrap);
         }
         private static Snapshot failure(int state, int error, String detail, String abi, int api,
-                                        GXHostVulkanProbe.Result hostVulkanProbe) {
-            return new Snapshot(state, error, detail, abi, api, false, hostVulkanProbe);
+                                        GXHostVulkanProbe.Result hostVulkanProbe,
+                                        GXVulkanDeviceBootstrap.Result vulkanDeviceBootstrap) {
+            return new Snapshot(state, error, detail, abi, api, false,
+                    hostVulkanProbe, vulkanDeviceBootstrap);
         }
         public String getStateName() { return stateName(state); }
     }
