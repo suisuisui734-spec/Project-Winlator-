@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <item android:title="Emulation">
+    <item android:title="GAME LIBRARY">
         <menu>
             <group android:id="@+id/group_emulation" android:checkableBehavior="single">
                 <item
@@ -16,7 +16,7 @@
         </menu>
     </item>
 
-    <item android:title="Tools &amp; Drivers">
+    <item android:title="TOOLS &amp; RUNTIME">
         <menu>
             <group android:id="@+id/group_tools" android:checkableBehavior="single">
                 <item
@@ -51,7 +51,7 @@
         </menu>
     </item>
 
-    <item android:title="System">
+    <item android:title="SYSTEM">
         <menu>
             <group android:id="@+id/group_system" android:checkableBehavior="single">
                 <item
