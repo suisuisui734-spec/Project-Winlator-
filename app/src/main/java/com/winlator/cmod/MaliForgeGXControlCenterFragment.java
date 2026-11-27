@@ -7,6 +7,8 @@ import android.content.ClipboardManager;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.Bundle;
 import android.os.Process;
 import android.view.LayoutInflater;
@@ -29,6 +31,7 @@ import com.winlator.cmod.maliforge.gx.GXEngineReport;
 import com.winlator.cmod.maliforge.gx.GXGraphicsDriverAvailability;
 import com.winlator.cmod.maliforge.gx.GXNativeRuntime;
 import com.winlator.cmod.maliforge.gx.GXVulkanDeviceBootstrap;
+import com.winlator.cmod.maliforge.gx.GXVulkanCommandTransferTest;
 import com.winlator.cmod.maliforge.gx.GXRuntimeDiagnostics;
 import com.winlator.cmod.maliforge.gx.MaliForgeGXEngine;
 
@@ -97,6 +100,36 @@ public final class MaliForgeGXControlCenterFragment extends Fragment {
         LinearLayout.LayoutParams refreshParams = matchWrap();
         refreshParams.topMargin = dp(context, 12);
         root.addView(refresh, refreshParams);
+
+        Button runVulkanCommandTest = new Button(context);
+        runVulkanCommandTest.setText("Run Vulkan buffer-copy test");
+        runVulkanCommandTest.setOnClickListener(v -> {
+            runVulkanCommandTest.setEnabled(false);
+            Toast.makeText(context, "Running Android host Vulkan command test...",
+                    Toast.LENGTH_SHORT).show();
+            Handler mainHandler = new Handler(Looper.getMainLooper());
+            new Thread(() -> {
+                GXVulkanCommandTransferTest.Result result = GXVulkanCommandTransferTest.run();
+                mainHandler.post(() -> {
+                    runVulkanCommandTest.setEnabled(true);
+                    if (!isAdded() || sections == null) return;
+                    Context activeContext = getContext();
+                    if (activeContext == null) return;
+                    addSection(activeContext, "Vulkan command-buffer transfer test",
+                            result.toDiagnosticText()
+                            + "\n\nThis test runs on the Android host Vulkan device only. "
+                            + "It verifies a buffer-copy command, completion fence, and read-back bytes; "
+                            + "it does not render or present a Wine game frame.");
+                    Toast.makeText(activeContext,
+                            result.ready ? "Vulkan command test passed"
+                                    : "Vulkan command test not verified: " + result.status,
+                            Toast.LENGTH_LONG).show();
+                });
+            }, "MaliForge-GX-Vulkan-Test").start();
+        });
+        LinearLayout.LayoutParams commandTestParams = matchWrap();
+        commandTestParams.topMargin = dp(context, 4);
+        root.addView(runVulkanCommandTest, commandTestParams);
 
         LinearLayout reportActions = new LinearLayout(context);
         reportActions.setOrientation(LinearLayout.HORIZONTAL);
