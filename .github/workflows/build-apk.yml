@@ -6,9 +6,12 @@ on:
       - feature/helio-g100-mali-optimization
       - feature/helio-g100-performance-phase2
       - feature/helio-g100-native-overlay-execution
+      - feature/maliforge-gx-stage2-runtime
+      - feature/maliforge-gx-stage3-backend-integration
   pull_request:
     branches:
       - main
+      - feature/maliforge-gx-stage2-runtime
   workflow_dispatch:
     inputs:
       flavor:
@@ -109,7 +112,7 @@ jobs:
       - name: Upload APK and inspection report
         uses: actions/upload-artifact@v4
         with:
-          name: project-winlator-${{ env.FLAVOR }}-${{ env.BUILD_TYPE }}-phase2
+          name: project-winlator-${{ env.FLAVOR }}-${{ env.BUILD_TYPE }}-phase3
           path: |
             app/build/outputs/apk/**/*.apk
             phase2-artifacts/*
