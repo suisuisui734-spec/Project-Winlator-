@@ -28,6 +28,7 @@ add_library(winlator SHARED
         winlator/renderer/egl.cpp
         winlator/renderer/renderer_jni.cpp
         winlator/mali_counters.cpp
+        winlator/maliforge/gx_native_runtime.cpp
         winlator/renderer/shader.cpp
         winlator/renderer/window.cpp
         winlator/renderer/cursor.cpp
