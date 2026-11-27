@@ -24,17 +24,17 @@ Baseline main SHA before this execution: `2cdc79f62626d769922ad6c6a7fc36e9f92ba2
 | 10 Memory Intelligence | #14 | Android system RAM and optional Vulkan heap-budget reporting | CI run 45986697445 passed | PARTIAL — shared RAM is not mislabeled as dedicated VRAM; per-renderer allocation telemetry not wired |
 | 11 Compatibility Intelligence | #15 | API/backend/capability requirements, sourced known-issue input, confidence states | CI run 45988103760 rerun passed all steps; initial attempt hit Maven Central HTTP 429 | IMPLEMENTED — TESTS PASS; game database remains caller-supplied/incomplete |
 | 12 Game Profiles | #16 | Validated per-game profile catalog, serialization/import/export/recovery model | CI run 45988365600 passed | PARTIAL — profile model/store exists; complete UI/apply workflow remains |
-| 13 Graphics Integrity | #17 | Read-only graphics component/configuration integrity model | No PR-triggered run confirmed by current run lookup | PARTIAL — model; no full live runtime audit |
-| 14 Crash Recovery | #18 | Conservative recovery controller and last-known-good behavior | No PR-triggered run confirmed by current run lookup | PARTIAL — recovery model; cannot prevent all crashes |
-| 15 Diagnostics | #19 | Redacted, bounded diagnostics bundle | No PR-triggered run confirmed by current run lookup | PARTIAL — engine/model; complete integrated export screen not confirmed |
-| 16 Benchmark Center | #20 | Evidence-only benchmark session/statistics model | No PR-triggered run confirmed by current run lookup | PARTIAL — no device/game benchmark measurements |
-| 17 Control Center UI | #21 | UI-ready control-center snapshot model | No PR-triggered run confirmed by current run lookup | PARTIAL — not a complete integrated Android UI |
-| 18 Gamepad Integration | #22 | Isolated per-game gamepad mapping model | No PR-triggered run confirmed by current run lookup | PARTIAL — does not replace or fully wire the Winlator virtual gamepad |
-| 19 Configuration Safety | #23 | GX-key allowlist, value validation, immutable snapshot/restore and diff model | Unit test source added; CI pending | PARTIAL — not yet wired to profile persistence/migrations/UI confirmation |
-| 20 Storage Cleanup | #24 | GX-only inventory, preview, explicit confirmation, stale-preview detection, move-to-recovery and restore | Unit test source added; CI pending | PARTIAL — no permanent cleanup; only known GX cache profile keys |
-| 21 Game Advisor | #26 | Compatibility/performance/memory/resolution composition with verified game identity gating | Unit test source added; CI pending | PARTIAL — no automatic game detection or complete bundled game database |
-| 22 CI / Automated Testing | #27 | Branch filters through Stage 23, branch-coverage validator, transient dependency retry, preserved Vulkan/APK checks | Workflow/source changes committed; successful run for the extended workflow not confirmed | IMPLEMENTED — WORKFLOW UPDATED; CI RESULT PENDING |
-| 23 Git / Release | #28 | Experimental version metadata, changelog, PR/issue templates, install and rollback guidance | Unit test source added; CI pending | PARTIAL — release documentation exists; no production release |
+| 13 Graphics Integrity | #17 | Read-only graphics component/configuration integrity model | Cumulative Stage16/17/18 CI runs 45991822391, 45991829787, 45991835091 passed | PARTIAL — model; no full live runtime audit |
+| 14 Crash Recovery | #18 | Conservative recovery controller and last-known-good behavior | Cumulative Stage16/17/18 CI runs passed | PARTIAL — recovery model; cannot prevent all crashes |
+| 15 Diagnostics | #19 | Redacted, bounded diagnostics bundle | Cumulative Stage16/17/18 CI runs passed | PARTIAL — engine/model; complete integrated export screen not confirmed |
+| 16 Benchmark Center | #20 | Evidence-only benchmark session/statistics model | Stage16 CI run 45991822391 passed tests, lint, APK build and package/ELF inspection | PARTIAL — no device/game benchmark measurements |
+| 17 Control Center UI | #21 | UI-ready control-center snapshot model | Stage17 CI run 45991829787 passed tests, lint, APK build and package/ELF inspection | PARTIAL — not a complete integrated Android UI |
+| 18 Gamepad Integration | #22 | Isolated per-game gamepad mapping model | Stage18 CI run 45991835091 passed tests, lint, APK build and package/ELF inspection | PARTIAL — does not replace or fully wire the Winlator virtual gamepad |
+| 19 Configuration Safety | #23 | GX-key allowlist, value validation, immutable snapshot/restore and diff model | Cumulative Stage22 CI run 45991870929 passed | PARTIAL — not yet wired to profile persistence/migrations/UI confirmation |
+| 20 Storage Cleanup | #24 | GX-only inventory, preview, explicit confirmation, stale-preview detection, move-to-recovery and restore | Cumulative Stage22 CI run 45991870929 passed | PARTIAL — no permanent cleanup; only known GX cache profile keys |
+| 21 Game Advisor | #26 | Compatibility/performance/memory/resolution composition with verified game identity gating | Cumulative Stage22 CI run 45991870929 passed | PARTIAL — no automatic game detection or complete bundled game database |
+| 22 CI / Automated Testing | #27 | Branch filters through Stage 23, branch-coverage validator, transient dependency retry, preserved Vulkan/APK checks | Stage22 CI run 45991870929 passed every job step, including tests/lint, APK build and ELF validation | IMPLEMENTED — CI PASS; hosted software-test scope only |
+| 23 Git / Release | #28 | Experimental version metadata, changelog, PR/issue templates, install and rollback guidance | Stage23 CI run 45991690545 passed all steps; final ancestry-sync commit run 45993000656 was running at report update | PARTIAL — release documentation exists; no production release |
 
 ### Stage 4 software Vulkan evidence
 
@@ -68,8 +68,9 @@ All these PRs are draft/open/unmerged at audit time. The earlier PRs #5–#22 ar
 - Stage 4 artifact: `project-winlator-standard-debug-phase4`, 446,681,820 bytes, artifact ID `15190542994`.
 - Stage 11 rerun artifact: `project-winlator-standard-debug-phase11`, 446,705,871 bytes, artifact ID `15193780705`.
 - Stage 4 and 11 APKs were generated by hosted CI, not built in this local execution session.
+- Follow-up CI: Stage2 run 45992087394 passed tests, lint, APK build, package inspection and artifact upload. Stage16 run 45991822391, Stage17 run 45991829787, Stage18 run 45991835091, and Stage22 run 45991870929 also passed all job steps.
+- Stage23 run 45991690545 passed tests/lint, APK build, APK package metadata inspection, guest-layer ELF64 x86_64 asset validation and artifact upload. Artifact ID `15193598967` (`project-winlator-standard-debug-stage23-validation`) was 446,732,287 bytes. A follow-up run for the ancestry-synchronized branch tip was running at report update.
 - APK app native ABI is ARM64 (`arm64-v8a`); the bundled guest layer asset is a separate Linux x86_64 ELF. They must not be conflated.
-- Stage 13–18 PR-triggered CI runs and Stage 19–23 extended workflow results were not confirmed via the available GitHub run lookup. The updated Stage 22 workflow adds missing PR-base filters for Stages 12–23.
 - Warnings were present in build logs, including existing C/C++ unused-parameter/sign-compare and third-party linker warnings; they did not fail the verified jobs.
 
 ## Performance / hardware report
@@ -113,3 +114,43 @@ The Stage 19–23 feature PR diffs contain additions/modifications only; the del
 ## Final status
 
 **PARTIALLY COMPLETE — source modules and staged PRs exist for all 23 stages, but the PR chain is not merged, the Stage 22/23 CI outcome is not yet verified, multiple features remain model-level/partially integrated, and target hardware/game performance testing has not been performed.**
+
+## Follow-up implementation and validation — 2026-11-27
+
+### CI compilation defect fixed
+The first Stage 23 CI attempts failed during Java compilation in
+`GXBenchmarkCenter.Session.invalid()`: the call supplied 18 arguments to a constructor
+requiring 19. One missing numeric default value was added. The same one-line correction
+was applied consistently to Stages 16–23 branches, with the identical blob SHA
+`f81102858b73cd62cabfdcab6ed46ac79704050d`.
+
+Verified cumulative CI runs after this fix:
+- Stage16: `45991822391` — passed.
+- Stage17: `45991829787` — passed.
+- Stage18: `45991835091` — passed.
+- Stage22: `45991870929` — passed, including the expanded Stage 19–23 coverage check.
+- Stage23: `45991690545` — passed the full workflow, including APK build, package inspection,
+  x86_64 guest-layer validation and artifact upload.
+- The Stage23 branch was then synchronized with the current Stage22 head by a two-parent
+  commit `ab19153ee039e885a4b30bd51935bb328ed216db` using the existing Stage23 tree unchanged.
+  CI run `45993000656` was in progress at this report update.
+
+### Dependency and source-safety follow-up
+- PR #6 base was corrected to Stage1 branch `feature/maliforge-gx-native-engine`.
+- A two-parent synchronization commit `2e55e1ae3affed416c4b90ec56454cff0ab351bd`
+  preserves the Stage2 tree and records Stage1 head `15e0671c362a158e4943165c8bb1dc2fa88a7b69`
+  as its parent. PR #6 is mergeable; PR #7 and PR #8 remain mergeable against the resulting
+  dependency chain.
+- PR #28 is based on the updated Stage22 branch and is mergeable after the Stage23
+  synchronization commit.
+- No branch was force-pushed. The ancestry updates were fast-forward ref updates to
+  commits created with the existing branch trees.
+- Main remained at `92d18b233317f6cb224ffa7b01cf49d32b2daa83` during this follow-up.
+  The three previously accidental Stage21 files remain a pre-existing main-branch issue
+  tracked by unmerged corrective PR #25; they were not added by this follow-up.
+
+### Remaining integration boundary
+The green hosted CI proves the tested software build path and Mesa llvmpipe diagnostic
+layer path. It does not verify Mali hardware, Android Winlator guest runtime, actual game
+rendering hooks, live frame-time collection, completed Control Center UI, or real gamepad
+event routing. Performance metrics remain NOT MEASURED.
