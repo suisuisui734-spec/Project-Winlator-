@@ -62,7 +62,7 @@ No APK is attached to this PR unless the matching CI run successfully generates 
 
 ## Validation status at this version
 
-- Stage 4 Linux software Vulkan smoke-test and APK x86_64 asset validation: PASS in hosted CI.
+- Stage 4 Linux software Vulkan smoke-test and APK x86_64 asset validation: PASS in hosted CI. The log records the implicit layer's INSTANCE_CREATED, PHYSICAL_DEVICES_ENUMERATED, PHYSICAL_DEVICE_GROUPS_ENUMERATED, DEVICE_CREATED, DEVICE_DESTROYED, and INSTANCE_DESTROYED events while Mesa llvmpipe (software Vulkan) is selected.
 - Stage 3 and Stage 5 hosted CI jobs: PASS.
 - Stage 11 hosted CI: initial attempt hit Maven Central HTTP 429; rerun completed successfully, including unit tests/lint, APK build, APK inspection, guest-layer ELF validation, and artifact upload (run ID 45988103760).
 - Stage 22/23 workflow changes: PR review is open; no successful run for the extended branch-coverage workflow has been confirmed yet.
