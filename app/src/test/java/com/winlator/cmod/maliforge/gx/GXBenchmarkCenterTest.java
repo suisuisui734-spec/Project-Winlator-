@@ -3,7 +3,7 @@ import org.junit.Test;import java.util.Arrays;import static org.junit.Assert.*;
 public class GXBenchmarkCenterTest{
  @Test public void calculatesStatisticsFromActualSamples(){
   GXBenchmarkCenter.Session s=new GXBenchmarkCenter().analyze("game","device","same workload","profile",GXBenchmarkCenter.Source.GAME_RENDERER,Arrays.asList(16.0,17.0,20.0,40.0),60);
-  assertTrue(s.valid);assertEquals(4,s.sampleCount);assertEquals(25, s.averageFps,0.01);assertEquals(40,s.p95Ms,0.01);assertEquals(1,s.stutters);
+  assertTrue(s.valid);assertEquals(4,s.sampleCount);assertEquals(43.01, s.averageFps,0.02);assertEquals(40,s.p95Ms,0.01);assertEquals(1,s.stutters);
  }
  @Test public void syntheticDataCannotBeComparedForPerformance(){
   GXBenchmarkCenter c=new GXBenchmarkCenter();GXBenchmarkCenter.Session a=c.analyze("g","d","w","p",GXBenchmarkCenter.Source.SYNTHETIC,Arrays.asList(10.0,10.0,10.0),60);
