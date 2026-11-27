@@ -71,6 +71,7 @@ import com.winlator.cmod.contentdialog.WineD3DConfigDialog;
 import com.winlator.cmod.contents.ContentProfile;
 import com.winlator.cmod.contents.ContentsManager;
 import com.winlator.cmod.contents.AdrenotoolsManager;
+import com.winlator.cmod.core.AppExecutors;
 import com.winlator.cmod.core.AppUtils;
 import com.winlator.cmod.core.DefaultVersion;
 import com.winlator.cmod.core.EnvVars;
@@ -89,6 +90,13 @@ import com.winlator.cmod.core.WineStartMenuCreator;
 import com.winlator.cmod.core.WineThemeManager;
 import com.winlator.cmod.core.WineUtils;
 import com.winlator.cmod.inputcontrols.ControlsProfile;
+import com.winlator.cmod.inputcontrols.GameProfileManager;
+import com.winlator.cmod.execution.ExecutionManager;
+import com.winlator.cmod.execution.DependencyDetector;
+import com.winlator.cmod.graphics.GraphicsBackendSelector;
+import com.winlator.cmod.graphics.GraphicsCapabilities;
+import com.winlator.cmod.graphics.GraphicsCapabilityDetector;
+import com.winlator.cmod.graphics.GraphicsFallbackManager;
 import com.winlator.cmod.inputcontrols.RadialWheelConfig;
 import java.util.List;
 import com.winlator.cmod.PlayerSlotsDialog;
@@ -146,7 +154,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -744,7 +751,7 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
                 // No profile defined, run the simulated dialog confirmation for input controls
                 simulateConfirmInputControlsDialog();
             }
-            Executors.newSingleThreadExecutor().execute(() -> {
+            AppExecutors.executeBackground(() -> {
                 setupWineSystemFiles();
                 extractGraphicsDriverFiles();
                 changeWineAudioDriver();
@@ -953,7 +960,7 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
     private void exit() {
         preloaderDialog.showOnUiThread(R.string.shutdown);
         com.winlator.cmod.perf.PerformanceManager.onGameStop(this);
-        Executors.newSingleThreadExecutor().execute(() -> {
+        AppExecutors.executeBackground(() -> {
             savePlaytimeData();
             handler.removeCallbacks(savePlaytimeRunnable);
             if (midiHandler != null) midiHandler.stop();
@@ -1481,6 +1488,38 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
         FileUtils.clear(imageFs.getTmpDir());
 
 
+        GraphicsCapabilities graphicsCapabilities = GraphicsCapabilityDetector.detect(this);
+        if (shortcut != null && shortcut.path != null && !shortcut.path.trim().isEmpty()) {
+            File hostExecutable = new File(shortcut.path);
+            if (hostExecutable.isFile() && hostExecutable.canRead()) {
+                try {
+                    // Only inspect shortcuts that resolve to a readable host file; DOS paths from .desktop
+                    // entries are deliberately not treated as Android filesystem paths.
+                    ExecutionManager.Analysis preflight = ExecutionManager.analyze(
+                            hostExecutable, emulator, false, wineInfo != null && wineInfo.isArm64EC());
+                    Log.i(TAG, "Windows EXE preflight: " + preflight.getSummary());
+                    for (DependencyDetector.GraphicsApi api : preflight.executable.dependencies.graphicsApis) {
+                        com.winlator.cmod.graphics.MaliBackendSelector.Recommendation recommendation =
+                                GraphicsBackendSelector.select(graphicsCapabilities, api);
+                        Log.i(TAG, "Graphics hint " + api + " -> " + recommendation.backend
+                                + " (baselineValidated=" + recommendation.baselineValidated + "): "
+                                + recommendation.reason);
+                    }
+                    if (!preflight.runtime.supported) {
+                        Log.w(TAG, "EXE runtime preflight is conservative; existing launch behavior is unchanged.");
+                    }
+                } catch (Exception e) {
+                    Log.w(TAG, "Skipping PE preflight for " + hostExecutable.getName() + ": " + e.getMessage());
+                }
+            }
+        }
+        String requestedDxWrapper = dxwrapper;
+        dxwrapper = GraphicsFallbackManager.selectSafeDxWrapper(dxwrapper, graphicsCapabilities);
+        if (!java.util.Objects.equals(requestedDxWrapper, dxwrapper)) {
+            Log.w("XServerDisplayActivity", "Graphics capability fallback: " + requestedDxWrapper
+                    + " -> " + dxwrapper + " (system Vulkan " + graphicsCapabilities.getVulkanVersion() + ")");
+        }
+
         guestProgramLauncherComponent = new GuestProgramLauncherComponent(
                 contentsManager,
                 contentsManager.getProfileByEntryName(container.getWineVersion()),
@@ -1715,11 +1754,8 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
         applyScreenMode(fullscreenMode, screenAlignment, false);
 
         if (shortcut != null) {
-            String controlsProfile = shortcut.getExtra("controlsProfile");
-            if (!controlsProfile.isEmpty()) {
-                ControlsProfile profile = inputControlsManager.getProfile(Integer.parseInt(controlsProfile));
-                if (profile != null) showInputControls(profile);
-            }
+            ControlsProfile profile = GameProfileManager.resolve(this, inputControlsManager, shortcut);
+            if (profile != null) showInputControls(profile);
 
             String simTouchScreen = shortcut.getExtra("simTouchScreen");
             touchpadView.setSimTouchScreen(simTouchScreen.equals("1"));
@@ -2160,9 +2196,11 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
                 touchpadView.setOnTouchListener(null); // Disable the listener if timeout is disabled
             }
             int position = sProfile.getSelectedItemPosition();
-            if (position > 0) {
-                showInputControls(inputControlsManager.getProfiles().get(position - 1));
-            }
+            ArrayList<ControlsProfile> selectedProfiles = inputControlsManager.getProfiles(true);
+            ControlsProfile selectedProfile = (position > 0 && position <= selectedProfiles.size())
+                    ? selectedProfiles.get(position - 1) : null;
+            GameProfileManager.remember(this, shortcut, selectedProfile);
+            if (selectedProfile != null) showInputControls(selectedProfile);
             else hideInputControls();
             updateProfile.run();
         });

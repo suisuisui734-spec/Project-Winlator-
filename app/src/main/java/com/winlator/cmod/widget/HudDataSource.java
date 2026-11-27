@@ -31,6 +31,8 @@ public class HudDataSource {
 
     private HandlerThread thread;
     private Handler handler;
+    private volatile boolean polling;
+    private final Runnable pollTask = this::poll;
     private final Context context;
     private final BatteryManager batteryManager;
 
@@ -88,36 +90,58 @@ public class HudDataSource {
     public HudDataSource(Context context) {
         this.context = context.getApplicationContext();
         this.batteryManager = (BatteryManager) this.context.getSystemService(Context.BATTERY_SERVICE);
-        thread = new HandlerThread("WinlatorHUD", android.os.Process.THREAD_PRIORITY_BACKGROUND);
-        thread.start();
-        handler = new Handler(thread.getLooper());
+        // The telemetry worker is created only when the HUD is shown.
     }
 
-    public void start() {
-        if (!thread.isAlive()) {
+    public synchronized void start() {
+        if (thread == null || !thread.isAlive()) {
             thread = new HandlerThread("WinlatorHUD", android.os.Process.THREAD_PRIORITY_BACKGROUND);
             thread.start();
             handler = new Handler(thread.getLooper());
             gpuFailed = false;
             gpuPath = null;
         }
-        handler.removeCallbacksAndMessages(null);
-        handler.post(this::poll);
+        polling = true;
+        handler.removeCallbacks(pollTask);
+        handler.post(pollTask);
     }
 
-    public void stop() {
-        handler.removeCallbacksAndMessages(null);
-        handler.post(maliCounters::close);
-        thread.quitSafely();
+    /** Pause sampling while keeping the worker available for a quick re-enable. */
+    public synchronized void pause() {
+        polling = false;
+        if (handler != null) {
+            handler.removeCallbacks(pollTask);
+            handler.post(maliCounters::close);
+        } else {
+            maliCounters.close();
+        }
+    }
+
+    /** Release the telemetry worker completely when the owning activity is destroyed. */
+    public synchronized void stop() {
+        polling = false;
+        if (handler != null && thread != null) {
+            handler.removeCallbacksAndMessages(null);
+            handler.post(maliCounters::close);
+            thread.quitSafely();
+        } else {
+            maliCounters.close();
+        }
+        handler = null;
+        thread = null;
     }
 
     private void poll() {
+        if (!polling) return;
         pollGpu();
         pollCpu();
         pollCpuTemp();
         pollBattery();
         pollRam();
-        handler.postDelayed(this::poll, 1500);
+        Handler currentHandler = handler;
+        if (polling && currentHandler != null) {
+            currentHandler.postDelayed(pollTask, 1500);
+        }
     }
 
     private void pollGpu() {

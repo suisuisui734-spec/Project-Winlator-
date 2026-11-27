@@ -54,13 +54,8 @@ public class CpuTopology {
             }
         }
 
-        // Fallback: If detection couldn't find distinct big cores, use upper half of cores
-        if (bigCores.isEmpty() && count > 1) {
-            for (int i = count / 2; i < count; i++) {
-                bigCores.add(i);
-            }
-        }
-
+        // Never guess CPU cluster layout. If sysfs is hidden or reports no usable
+        // frequencies, leave affinity unchanged rather than pinning the wrong cores.
         Log.d(TAG, "Detected Big Cores: " + bigCores + " (maxFreq=" + maxFreq + " MHz)");
         return bigCores;
     }
@@ -76,13 +71,19 @@ public class CpuTopology {
         return sb.toString();
     }
 
-    public static int getBigCoreMask() {
-        List<Integer> bigCores = detectBigCoreIndices();
+    static int buildCpuMask(List<Integer> coreIndices) {
+        if (coreIndices == null || coreIndices.isEmpty()) return 0;
         int mask = 0;
-        for (int core : bigCores) {
-            mask |= (1 << core);
+        for (Integer core : coreIndices) {
+            if (core != null && core >= 0 && core < Integer.SIZE) {
+                mask |= (1 << core);
+            }
         }
         return mask;
+    }
+
+    public static int getBigCoreMask() {
+        return buildCpuMask(detectBigCoreIndices());
     }
 
     public static int applyBigCoreAffinity(int guestRootPid) {
