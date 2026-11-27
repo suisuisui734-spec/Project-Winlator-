@@ -164,6 +164,11 @@ public final class MaliForgeGXControlCenterFragment extends Fragment {
                         + "\nManual confirmation required: "
                         + report.getBackendPlan().requiresManualConfirmation();
             }
+            addSection(context, "Native Vulkan host preflight",
+                    nativeRuntime.hostVulkanProbe.toDiagnosticText()
+                    + "\n\nThis query uses the Android host Vulkan loader. It does not create a game device, "
+                    + "swapchain, Wine renderer, or Vulkan ICD.");
+
             addSection(context, "Backend planning (advisory only)", selectionText
                     + "\n\nThis planner does not change container settings or switch your selected wrapper.");
 

@@ -15,7 +15,8 @@ public final class GXNativeRuntime {
     public synchronized Snapshot initialize() {
         if (!GXNativeBridge.isLoaded()) {
             snapshot = Snapshot.failure(STATE_FAILED, ERROR_LIBRARY_UNAVAILABLE,
-                    "libwinlator.so unavailable: " + GXNativeBridge.loadError(), "Unavailable", -1);
+                    "libwinlator.so unavailable: " + GXNativeBridge.loadError(), "Unavailable", -1,
+                    GXHostVulkanProbe.unavailable("Native library unavailable"));
             return snapshot;
         }
         try {
@@ -25,16 +26,25 @@ public final class GXNativeRuntime {
             String abi = GXNativeBridge.abi();
             int api = GXNativeBridge.api();
             String detail = GXNativeBridge.diagnostics();
+            GXHostVulkanProbe.Result hostProbe = GXHostVulkanProbe.unavailable("Native Vulkan probe was not run");
+            if (result == ERROR_NONE && state == STATE_READY) {
+                try {
+                    hostProbe = GXHostVulkanProbe.parse(GXNativeBridge.probeHostVulkan());
+                } catch (UnsatisfiedLinkError | RuntimeException probeError) {
+                    hostProbe = GXHostVulkanProbe.unavailable("Native Vulkan probe failed: "
+                            + probeError.getClass().getSimpleName());
+                }
+            }
             if (result != ERROR_NONE || state != STATE_READY) {
                 if (error == ERROR_NONE) error = result == ERROR_NONE
                         ? ERROR_NATIVE_INITIALIZATION : result;
-                snapshot = Snapshot.failure(state, error, detail, abi, api);
-            } else snapshot = Snapshot.ready(detail, abi, api);
+                snapshot = Snapshot.failure(state, error, detail, abi, api, hostProbe);
+            } else snapshot = Snapshot.ready(detail, abi, api, hostProbe);
         } catch (UnsatisfiedLinkError | RuntimeException e) {
             snapshot = Snapshot.failure(STATE_FAILED, ERROR_NATIVE_INITIALIZATION,
                     e.getClass().getSimpleName() + ": "
                     + (e.getMessage() == null ? "No details" : e.getMessage()),
-                    "Unavailable", -1);
+                    "Unavailable", -1, GXHostVulkanProbe.unavailable("Native initialization failed"));
         }
         return snapshot;
     }
@@ -62,9 +72,11 @@ public final class GXNativeRuntime {
     public static final class Snapshot {
         public final int state, errorCode, androidApiLevel;
         public final String diagnostics, abi;
+        public final GXHostVulkanProbe.Result hostVulkanProbe;
         public final boolean nativeBridgeReady;
         public final boolean graphicsBackendAvailable;
-        private Snapshot(int state, int error, String detail, String abi, int api, boolean ready) {
+        private Snapshot(int state, int error, String detail, String abi, int api, boolean ready,
+                         GXHostVulkanProbe.Result hostVulkanProbe) {
             this.state = state;
             errorCode = error;
             diagnostics = detail == null ? "" : detail;
@@ -72,16 +84,21 @@ public final class GXNativeRuntime {
             androidApiLevel = api;
             nativeBridgeReady = ready;
             graphicsBackendAvailable = false;
+            this.hostVulkanProbe = hostVulkanProbe == null
+                    ? GXHostVulkanProbe.unavailable("No probe result") : hostVulkanProbe;
         }
         private static Snapshot empty() {
             return new Snapshot(STATE_UNINITIALIZED, ERROR_NONE,
-                    "Native bridge has not been initialized", "Unknown", -1, false);
+                    "Native bridge has not been initialized", "Unknown", -1, false,
+                    GXHostVulkanProbe.unavailable("Native bridge has not been initialized"));
         }
-        private static Snapshot ready(String detail, String abi, int api) {
-            return new Snapshot(STATE_READY, ERROR_NONE, detail, abi, api, true);
+        private static Snapshot ready(String detail, String abi, int api,
+                                      GXHostVulkanProbe.Result hostVulkanProbe) {
+            return new Snapshot(STATE_READY, ERROR_NONE, detail, abi, api, true, hostVulkanProbe);
         }
-        private static Snapshot failure(int state, int error, String detail, String abi, int api) {
-            return new Snapshot(state, error, detail, abi, api, false);
+        private static Snapshot failure(int state, int error, String detail, String abi, int api,
+                                        GXHostVulkanProbe.Result hostVulkanProbe) {
+            return new Snapshot(state, error, detail, abi, api, false, hostVulkanProbe);
         }
         public String getStateName() { return stateName(state); }
     }
