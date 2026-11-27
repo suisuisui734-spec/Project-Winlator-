@@ -8,6 +8,7 @@ if [[ ! -f "$workflow" ]]; then
 fi
 
 required_branches=(
+  "main"
   "feature/maliforge-gx-stage19-config-safety"
   "feature/maliforge-gx-stage20-storage"
   "feature/maliforge-gx-stage21-game-advisor"
