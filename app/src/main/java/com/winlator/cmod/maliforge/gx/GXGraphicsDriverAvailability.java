@@ -1,7 +1,6 @@
 package com.winlator.cmod.maliforge.gx;
 
 import com.winlator.cmod.graphics.GraphicsCapabilities;
-import com.winlator.cmod.container.Container;
 
 /**
  * Single source of truth for the MaliForge GX Graphics Driver UI entry.
@@ -16,23 +15,35 @@ public final class GXGraphicsDriverAvailability {
     private final GXBackendDescriptor descriptor;
     private final GXBackendInitializationResult result;
     private final boolean maliDeviceDetected;
+    private final boolean containerSupportsDriver;
 
     private GXGraphicsDriverAvailability(GXBackendDescriptor descriptor,
                                          GXBackendInitializationResult result,
-                                         boolean maliDeviceDetected) {
+                                         boolean maliDeviceDetected,
+                                         boolean containerSupportsDriver) {
         this.descriptor = descriptor;
         this.result = result;
         this.maliDeviceDetected = maliDeviceDetected;
+        this.containerSupportsDriver = containerSupportsDriver;
     }
 
     public static GXGraphicsDriverAvailability inspect(GraphicsCapabilities capabilities) {
+        return inspect(capabilities, false);
+    }
+
+    /**
+     * containerSupportsDriver must reflect the host application's real persistence allow-list.
+     * Keeping it explicit avoids loading Android-backed Container static fields in JVM unit tests.
+     */
+    public static GXGraphicsDriverAvailability inspect(GraphicsCapabilities capabilities,
+                                                        boolean containerSupportsDriver) {
         GXBackendRegistry registry = GXBackendRegistry.createDefault();
         GXBackendDescriptor descriptor = registry.get(DRIVER_ID);
         GXBackendCapabilities backendCapabilities = GXBackendCapabilities.from(capabilities);
         GXBackendInitializationResult result = new GXBackendValidator().validate(
                 descriptor, backendCapabilities, capabilities);
         boolean maliDetected = capabilities != null && capabilities.isMali();
-        return new GXGraphicsDriverAvailability(descriptor, result, maliDetected);
+        return new GXGraphicsDriverAvailability(descriptor, result, maliDetected, containerSupportsDriver);
     }
 
     public String getDriverId() {
@@ -71,8 +82,7 @@ public final class GXGraphicsDriverAvailability {
 
     public boolean isSelectable() {
         return descriptor != null && descriptor.isSelectable()
-                && result != null && result.isReady()
-                && Container.isSupportedGraphicsDriver(DRIVER_ID);
+                && result != null && result.isReady() && containerSupportsDriver;
     }
 
     public boolean isPackageBundled() {
