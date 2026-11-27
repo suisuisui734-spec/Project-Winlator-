@@ -28,18 +28,6 @@ on:
       - feature/maliforge-gx-stage21-game-advisor
       - feature/maliforge-gx-stage22-ci
       - feature/maliforge-gx-stage23-release
-      - feature/maliforge-gx-stage12-game-profiles
-      - feature/maliforge-gx-stage13-graphics-integrity
-      - feature/maliforge-gx-stage14-recovery
-      - feature/maliforge-gx-stage15-diagnostics
-      - feature/maliforge-gx-stage16-benchmark
-      - feature/maliforge-gx-stage17-control-center
-      - feature/maliforge-gx-stage18-gamepad
-      - feature/maliforge-gx-stage19-config-safety
-      - feature/maliforge-gx-stage20-storage
-      - feature/maliforge-gx-stage21-game-advisor
-      - feature/maliforge-gx-stage22-ci
-      - feature/maliforge-gx-stage23-release
   pull_request:
     branches:
       - main
@@ -53,6 +41,18 @@ on:
       - feature/maliforge-gx-stage09-resolution
       - feature/maliforge-gx-stage10-memory
       - feature/maliforge-gx-stage11-compatibility
+      - feature/maliforge-gx-stage12-game-profiles
+      - feature/maliforge-gx-stage13-graphics-integrity
+      - feature/maliforge-gx-stage14-recovery
+      - feature/maliforge-gx-stage15-diagnostics
+      - feature/maliforge-gx-stage16-benchmark
+      - feature/maliforge-gx-stage17-control-center
+      - feature/maliforge-gx-stage18-gamepad
+      - feature/maliforge-gx-stage19-config-safety
+      - feature/maliforge-gx-stage20-storage
+      - feature/maliforge-gx-stage21-game-advisor
+      - feature/maliforge-gx-stage22-ci
+      - feature/maliforge-gx-stage23-release
   workflow_dispatch:
     inputs:
       flavor:
@@ -213,4 +213,5 @@ jobs:
             phase4-artifacts/*
           if-no-files-found: error
           retention-days: 14
+
 
