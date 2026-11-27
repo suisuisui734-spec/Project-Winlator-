@@ -1105,7 +1105,8 @@ public class ContainerDetailFragment extends Fragment {
         String[] originalItems = context.getResources().getStringArray(R.array.graphics_driver_entries);
         List<String> itemList = new ArrayList<>(Arrays.asList(originalItems));
         GXGraphicsDriverAvailability availability = GXGraphicsDriverAvailability.inspect(
-                GraphicsCapabilityDetector.detect(context));
+                GraphicsCapabilityDetector.detect(context),
+                Container.isSupportedGraphicsDriver(GXGraphicsDriverAvailability.DRIVER_ID));
         int unavailablePosition = itemList.size();
         itemList.add(availability.getDropdownLabel());
         spinner.setAdapter(new GraphicsDriverArrayAdapter(
@@ -1115,7 +1116,8 @@ public class ContainerDetailFragment extends Fragment {
     private static void updateMaliForgeGXAvailability(Context context, TextView statusView) {
         if (statusView == null) return;
         GXGraphicsDriverAvailability availability = GXGraphicsDriverAvailability.inspect(
-                GraphicsCapabilityDetector.detect(context));
+                GraphicsCapabilityDetector.detect(context),
+                Container.isSupportedGraphicsDriver(GXGraphicsDriverAvailability.DRIVER_ID));
         String hostGpu = availability.isMaliDeviceDetected()
                 ? "Android host probe: Mali GPU detected"
                 : "Android host probe: Mali GPU not detected";
