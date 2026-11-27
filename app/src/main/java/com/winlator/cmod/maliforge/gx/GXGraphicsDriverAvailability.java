@@ -1,6 +1,7 @@
 package com.winlator.cmod.maliforge.gx;
 
 import com.winlator.cmod.graphics.GraphicsCapabilities;
+import com.winlator.cmod.container.Container;
 
 /**
  * Single source of truth for the MaliForge GX Graphics Driver UI entry.
@@ -70,7 +71,8 @@ public final class GXGraphicsDriverAvailability {
 
     public boolean isSelectable() {
         return descriptor != null && descriptor.isSelectable()
-                && result != null && result.isReady();
+                && result != null && result.isReady()
+                && Container.isSupportedGraphicsDriver(DRIVER_ID);
     }
 
     public boolean isPackageBundled() {
