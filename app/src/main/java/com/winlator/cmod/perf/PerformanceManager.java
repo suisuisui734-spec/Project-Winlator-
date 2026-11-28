@@ -56,7 +56,6 @@ public class PerformanceManager {
         isSessionActive = true;
         if (prefs == null) prefs = PreferenceManager.getDefaultSharedPreferences(activity);
 
-        init(activity);
         configureThermalGuard(activity, prefs);
         if (prefs.getBoolean(PREF_GAME_MODE_SIGNAL, true)) {
             GameModeSignal.enterGameplay(activity);
@@ -146,6 +145,9 @@ public class PerformanceManager {
             suspendOptionalBoosts(activity);
             return;
         }
+
+        // Defer OEM performance SDK initialization until the corresponding profile is actually active.
+        init(activity);
 
         if (prefs.getBoolean(PREF_THREAD_PRIORITY_BOOST, true) && currentGuestPid > 0) {
             PerfPriority.boost(currentGuestPid);
