@@ -166,3 +166,10 @@ Do not create a release claiming MaliForge GX renderer support on the basis of t
 **Highest verified level: \`DRIVER VISIBLE IN SELECTOR\`.**
 
 The row is intentionally disabled. Host Vulkan initialization/offscreen diagnostics are implemented and CI-validated in their stated scope. Guest Vulkan rendering, surface presentation, Windows application rendering, game rendering, and real Mali hardware verification remain unverified.
+
+
+## Stage 43 — external PanVK package candidate inspection
+
+Added `GXExternalPanVKCandidate` as a conservative package inspection helper. It validates installed package metadata, requires PanVK-identifying metadata, rejects unsafe library paths, confines the library path to the package directory, and checks ELF64 little-endian AArch64 headers. The helper reports only `EXTERNAL_CANDIDATE`; it does not load the library, initialize Vulkan, enable MaliForge GX, or claim guest rendering. JVM tests cover missing packages, path validation, candidate inspection, and malformed/non-PanVK metadata. CI must validate this code before it is considered tested.
+
+**Remaining:** connect this inspection to a UI diagnostic panel, then separately implement a verified guest runtime hook and presentation path. This helper is not a renderer and does not justify selecting `maliforge_gx`.
