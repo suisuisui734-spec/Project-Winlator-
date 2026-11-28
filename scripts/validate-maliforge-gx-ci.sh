@@ -13,7 +13,8 @@ required_branches=(
   "feature/maliforge-gx-stage20-storage"
   "feature/maliforge-gx-stage21-game-advisor"
   "feature/maliforge-gx-stage22-ci"
-  "feature/maliforge-gx-stage23-release"
+  "feature/maliforge-gx-stage23-release",
+  "feature/maliforge-gx-game-rendering-backend"
 )
 
 count_in_section() {
@@ -58,4 +59,4 @@ for marker in "${required_markers[@]}"; do
   fi
 done
 
-echo "MaliForge GX CI coverage validated for Stages 19–23 in both push and pull_request filters."
+echo "MaliForge GX CI coverage validated for Stages 19–23 and the Vulkan capability snapshot branch in both push and pull_request filters."
