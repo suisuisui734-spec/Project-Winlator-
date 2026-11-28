@@ -8,16 +8,16 @@ import static org.junit.Assert.assertTrue;
 public class PerformanceManagerPolicyTest {
     @Test
     public void leanModeSkipsOptionalBoosts() {
-        assertTrue(PerformanceManager.shouldSkipOptionalBoosts(true, false));
+        assertTrue(PerformancePolicy.shouldSkipOptionalBoosts(true, false));
     }
 
     @Test
     public void thermalGuardSkipsOptionalBoostsWithoutLeanMode() {
-        assertTrue(PerformanceManager.shouldSkipOptionalBoosts(false, true));
+        assertTrue(PerformancePolicy.shouldSkipOptionalBoosts(false, true));
     }
 
     @Test
     public void normalModeKeepsExistingOptionalBoostPolicy() {
-        assertFalse(PerformanceManager.shouldSkipOptionalBoosts(false, false));
+        assertFalse(PerformancePolicy.shouldSkipOptionalBoosts(false, false));
     }
 }
