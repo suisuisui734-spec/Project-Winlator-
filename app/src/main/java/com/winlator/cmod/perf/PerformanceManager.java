@@ -29,14 +29,6 @@ public class PerformanceManager {
     public static final String PREF_THERMAL_GUARD = "perf_thermal_guard";
     public static final String PREF_LEAN_MODE = "perf_lean_mode";
 
-    /**
-     * Lean mode and thermal protection both suppress optional performance hooks.
-     * Core emulation, graphics, audio, input, and container services are unaffected.
-     */
-    static boolean shouldSkipOptionalBoosts(boolean leanMode, boolean thermalThrottled) {
-        return leanMode || thermalThrottled;
-    }
-
     private static SamsungSPerfDriver samsungDriver = null;
     private static int currentGuestPid = -1;
     private static boolean isSessionActive = false;
@@ -140,7 +132,7 @@ public class PerformanceManager {
 
     private static void applyOptionalBoosts(Activity activity, SharedPreferences prefs, boolean applyAffinity) {
         boolean leanMode = prefs.getBoolean(PREF_LEAN_MODE, false);
-        if (shouldSkipOptionalBoosts(leanMode, thermalThrottled)) {
+        if (PerformancePolicy.shouldSkipOptionalBoosts(leanMode, thermalThrottled)) {
             // Avoid /proc thread/process walks and all app-controlled optional boost hooks.
             suspendOptionalBoosts(activity);
             return;
