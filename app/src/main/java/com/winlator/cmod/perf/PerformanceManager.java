@@ -27,6 +27,15 @@ public class PerformanceManager {
     public static final String PREF_SUSTAINED_PERFORMANCE = "perf_sustained_performance";
     public static final String PREF_SAMSUNG_PERF_BOOST = "perf_samsung_boost";
     public static final String PREF_THERMAL_GUARD = "perf_thermal_guard";
+    public static final String PREF_LEAN_MODE = "perf_lean_mode";
+
+    /**
+     * Lean mode and thermal protection both suppress optional performance hooks.
+     * Core emulation, graphics, audio, input, and container services are unaffected.
+     */
+    static boolean shouldSkipOptionalBoosts(boolean leanMode, boolean thermalThrottled) {
+        return leanMode || thermalThrottled;
+    }
 
     private static SamsungSPerfDriver samsungDriver = null;
     private static int currentGuestPid = -1;
@@ -112,10 +121,11 @@ public class PerformanceManager {
         currentGuestPid = pid;
         if (activity != null && isSessionActive) {
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(activity);
-            if (!thermalThrottled && prefs.getBoolean(PREF_THREAD_PRIORITY_BOOST, true)) {
+            boolean leanMode = prefs.getBoolean(PREF_LEAN_MODE, false);
+            if (!leanMode && !thermalThrottled && prefs.getBoolean(PREF_THREAD_PRIORITY_BOOST, true)) {
                 PerfPriority.boost(pid);
             }
-            if (!thermalThrottled && prefs.getBoolean(PREF_PREFER_BIG_CORES, false)) {
+            if (!leanMode && !thermalThrottled && prefs.getBoolean(PREF_PREFER_BIG_CORES, false)) {
                 CpuTopology.applyBigCoreAffinity(pid);
             }
         }
@@ -130,7 +140,9 @@ public class PerformanceManager {
     }
 
     private static void applyOptionalBoosts(Activity activity, SharedPreferences prefs, boolean applyAffinity) {
-        if (thermalThrottled) {
+        boolean leanMode = prefs.getBoolean(PREF_LEAN_MODE, false);
+        if (shouldSkipOptionalBoosts(leanMode, thermalThrottled)) {
+            // Avoid /proc thread/process walks and all app-controlled optional boost hooks.
             suspendOptionalBoosts(activity);
             return;
         }
