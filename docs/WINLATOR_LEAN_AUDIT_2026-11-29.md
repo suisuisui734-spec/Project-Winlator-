@@ -71,20 +71,49 @@ The inspected README and native build files show host Vulkan diagnostics, device
 
 No driver archives or MaliForge GX source files were removed or rewritten in this optimization pass.
 
-## APK and device measurements — not available
+## APK build measurements — CI verified
 
-The repository Releases API showed releases without attached APK assets at the time of inspection. No verified baseline APK was available to inspect. Therefore these values are **not measured**:
+A Standard Debug APK was successfully built and inspected by GitHub Actions:
 
-- Original APK size and optimized APK size
-- Download/install footprint
-- Install-time or app-startup latency
-- Container startup/game launch latency
+- Workflow run: `46182550279`
+- Application source commit: `ad00d870ba733d8a1bdf787db4fc33aa3daa1998`
+- APK path: `app/build/outputs/apk/standard/debug/app-standard-debug.apk`
+- Package/version: `com.winlator.mali`, versionCode `23`, versionName `1.2.1 Bionic`
+- APK size: **448,088,211 bytes** (448.09 MB decimal; approximately 427.3 MiB)
+- ZIP entries: 1,292
+- Native libraries: 22, totaling 12,271,152 uncompressed bytes
+- Packaged Android native ABI: `arm64-v8a` only
+- Runtime asset entries: 111
+- Runtime assets: 433,967,419 bytes uncompressed and 432,197,737 bytes compressed in the APK (about 96.5% of the APK file size)
+
+Largest APK entries from the build inspection:
+
+| APK entry | Uncompressed bytes | Compressed bytes |
+|---|---:|---:|
+| `assets/imagefs.tzst` | 199,788,880 | 199,661,292 |
+| `assets/container_pattern_common.tzst` | 84,522,663 | 84,500,995 |
+| `assets/wincomponents/direct3d.tzst` | 31,207,067 | 31,189,835 |
+| `assets/graphics_driver/adrenotools-v819.tzst` | 9,881,991 | 9,883,996 |
+| `assets/dxwrapper/dxvk-1.10.3.tzst` | 7,544,894 | 7,540,313 |
+
+The large `.tzst` runtime assets are already compressed, so APK ZIP compression saves very little on these payloads. Removing them without replacing their runtime delivery would remove functionality. The high-impact future size option is a validated Lite content package/on-demand optional payload delivery, not blindly stripping Wine or graphics components.
+
+The uploaded workflow artifact is named `project-winlator-standard-debug-stage23-validation` and is available until **2026-12-12**. It is a CI artifact, not a published GitHub Release asset. No release APK assets were attached to the repository's Releases at audit time.
+
+No baseline APK for the same codebase/build type was available, so APK size reduction percentage cannot be calculated. The Standard Debug result must not be described as a signed production release.
+
+## Device measurements — not available
+
+These values remain **not measured**:
+
+- Install footprint and install-time behavior on device
+- App startup, container startup and game launch latency
 - Device RAM and CPU usage
-- FPS, frame-time percentiles, stutter frequency
+- FPS, frame-time percentiles and stutter frequency
 - Thermal behavior or sustained performance
 - Physical-game compatibility and crash rate
 
-Do not infer APK size from Git repository size. A device run is required for the hardware metrics.
+A physical Android run is required for those hardware metrics. Do not infer device performance from a successful CI build.
 
 ## Risks and next optimization candidates
 
@@ -97,7 +126,10 @@ Do not infer APK size from Git repository size. A device run is required for the
 
 ## Validation record
 
-- Repository tree inspection completed.
-- Source-level wiring and unit-test source added in this branch.
-- APK build and device performance validation: pending CI/device execution.
-- No APK size reduction, FPS gain, RAM reduction, or temperature improvement is claimed by this report.
+- Repository tree and package-source inspection completed.
+- Standard Debug source wiring built successfully in GitHub Actions.
+- Unit tests and lint passed on application source commit `ad00d870ba733d8a1bdf787db4fc33aa3daa1998`.
+- MaliForge GX Linux host smoke test passed; APK guest-layer asset was verified as ELF64 x86_64.
+- Standard Debug APK metadata and ARM64 native ABI inspection passed.
+- Physical-device performance and game compatibility testing remain pending.
+- No APK size reduction, FPS gain, RAM reduction, or temperature improvement is claimed because no same-condition baseline/device comparison was performed.
