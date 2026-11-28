@@ -14,7 +14,10 @@ public final class GXBackendRegistry {
     public static final String DXVK = "winlator-dxvk";
     public static final String VKD3D = "winlator-vkd3d";
     public static final String WINED3D = "winlator-wined3d";
-    public static final String MALIFORGE_NATIVE = "maliforge-gx-native";
+    /** Canonical MaliForge GX identifier. It is not a Container.WRAPPER_DRIVERS value yet. */
+    public static final String MALIFORGE_NATIVE = "maliforge_gx";
+    /** Historical diagnostic identifier; retained for log/config migration code only. */
+    public static final String LEGACY_MALIFORGE_NATIVE = "maliforge-gx-native";
 
     private final Map<String, GXBackendDescriptor> descriptors = new LinkedHashMap<>();
     private final Map<String, GXBackendInitializationResult> lastResults = new LinkedHashMap<>();
@@ -76,11 +79,11 @@ public final class GXBackendRegistry {
                 GXBackendDescriptor.RequiredApi.NONE, 0, 0, Collections.emptySet(),
                 false, true, false, true, true,
                 "Compatibility fallback supplied by the current Wine/Winlator build; no GX GLES context is probed."));
-        registry.register(new GXBackendDescriptor(MALIFORGE_NATIVE, "MaliForge GX native renderer",
+        registry.register(new GXBackendDescriptor(MALIFORGE_NATIVE, "MaliForge GX",
                 "0.3.0-stage3-experimental", GXBackendDescriptor.Kind.NATIVE_RENDERER,
                 GXBackendDescriptor.RequiredApi.VULKAN, 1, 1, swapchain,
                 false, false, false, false, true,
-                "Unavailable: no MaliForge game renderer package or safe Wine renderer initialization hook is installed."));
+                "Experimental Vulkan graphics backend for compatible Mali devices. Unavailable until a real guest renderer package and verified Wine/container initialization hook are installed."));
         return registry;
     }
 }

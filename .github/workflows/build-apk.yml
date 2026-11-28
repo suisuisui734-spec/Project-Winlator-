@@ -29,6 +29,7 @@ on:
       - feature/maliforge-gx-stage21-game-advisor
       - feature/maliforge-gx-stage22-ci
       - feature/maliforge-gx-stage23-release
+      - feature/maliforge-gx-game-rendering-backend
   pull_request:
     branches:
       - main
@@ -54,6 +55,7 @@ on:
       - feature/maliforge-gx-stage21-game-advisor
       - feature/maliforge-gx-stage22-ci
       - feature/maliforge-gx-stage23-release
+      - feature/maliforge-gx-game-rendering-backend
   workflow_dispatch:
     inputs:
       flavor:

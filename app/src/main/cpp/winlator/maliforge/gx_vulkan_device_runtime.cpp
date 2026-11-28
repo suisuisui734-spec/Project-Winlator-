@@ -16,6 +16,12 @@ struct VulkanDeviceRuntime {
     VkDevice device = VK_NULL_HANDLE;
     VkQueue graphicsQueue = VK_NULL_HANDLE;
     VkPhysicalDeviceProperties properties{};
+    VkPhysicalDeviceMemoryProperties memoryProperties{};
+    VkPhysicalDeviceFeatures availableFeatures{};
+    std::vector<std::string> deviceExtensions;
+    bool extensionsEnumerated = false;
+    uint64_t deviceLocalHeapBytes = 0;
+    uint32_t hostVisibleMemoryTypeCount = 0;
     uint32_t graphicsQueueFamily = UINT32_MAX;
     uint32_t queueCount = 0;
 };
@@ -72,20 +78,119 @@ void destroyRuntime(VulkanDeviceRuntime *runtime) {
     *runtime = VulkanDeviceRuntime{};
 }
 
+const char *deviceTypeName(VkPhysicalDeviceType type) {
+    switch (type) {
+        case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU: return "INTEGRATED_GPU";
+        case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU: return "DISCRETE_GPU";
+        case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU: return "VIRTUAL_GPU";
+        case VK_PHYSICAL_DEVICE_TYPE_CPU: return "CPU";
+        case VK_PHYSICAL_DEVICE_TYPE_OTHER: return "OTHER";
+        default: return "UNKNOWN";
+    }
+}
+
 std::string readyResult(bool reused) {
     std::ostringstream json;
     json << "{\"status\":\"ready\",\"stage\":\"logical_device_created\""
          << ",\"vkResult\":0,\"deviceName\":\"" << jsonEscape(g_runtime.properties.deviceName) << "\""
          << ",\"vendorId\":" << g_runtime.properties.vendorID
          << ",\"deviceId\":" << g_runtime.properties.deviceID
+         << ",\"deviceType\":\"" << deviceTypeName(g_runtime.properties.deviceType) << "\""
+         << ",\"driverVersion\":" << g_runtime.properties.driverVersion
          << ",\"apiVersion\":\"" << VK_VERSION_MAJOR(g_runtime.properties.apiVersion)
          << '.' << VK_VERSION_MINOR(g_runtime.properties.apiVersion)
          << '.' << VK_VERSION_PATCH(g_runtime.properties.apiVersion) << "\""
          << ",\"queueFamilyIndex\":" << g_runtime.graphicsQueueFamily
          << ",\"queueCount\":" << g_runtime.queueCount
          << ",\"graphicsQueue\":true,\"retainedInProcess\":true"
+         << ",\"extensionsEnumerated\":" << (g_runtime.extensionsEnumerated ? "true" : "false")
+         << ",\"deviceExtensions\":[";
+    for (size_t index = 0; index < g_runtime.deviceExtensions.size(); ++index) {
+        if (index != 0) json << ',';
+        json << "\""
+             << jsonEscape(g_runtime.deviceExtensions[index].c_str())
+             << "\"";
+    }
+
+    const VkPhysicalDeviceFeatures &f = g_runtime.availableFeatures;
+    std::vector<const char *> features;
+    if (f.robustBufferAccess) features.push_back("robustBufferAccess");
+    if (f.fullDrawIndexUint32) features.push_back("fullDrawIndexUint32");
+    if (f.imageCubeArray) features.push_back("imageCubeArray");
+    if (f.independentBlend) features.push_back("independentBlend");
+    if (f.geometryShader) features.push_back("geometryShader");
+    if (f.tessellationShader) features.push_back("tessellationShader");
+    if (f.sampleRateShading) features.push_back("sampleRateShading");
+    if (f.dualSrcBlend) features.push_back("dualSrcBlend");
+    if (f.logicOp) features.push_back("logicOp");
+    if (f.multiDrawIndirect) features.push_back("multiDrawIndirect");
+    if (f.drawIndirectFirstInstance) features.push_back("drawIndirectFirstInstance");
+    if (f.depthClamp) features.push_back("depthClamp");
+    if (f.depthBiasClamp) features.push_back("depthBiasClamp");
+    if (f.fillModeNonSolid) features.push_back("fillModeNonSolid");
+    if (f.depthBounds) features.push_back("depthBounds");
+    if (f.wideLines) features.push_back("wideLines");
+    if (f.largePoints) features.push_back("largePoints");
+    if (f.alphaToOne) features.push_back("alphaToOne");
+    if (f.multiViewport) features.push_back("multiViewport");
+    if (f.samplerAnisotropy) features.push_back("samplerAnisotropy");
+    if (f.textureCompressionETC2) features.push_back("textureCompressionETC2");
+    if (f.textureCompressionASTC_LDR) features.push_back("textureCompressionASTC_LDR");
+    if (f.textureCompressionBC) features.push_back("textureCompressionBC");
+    if (f.occlusionQueryPrecise) features.push_back("occlusionQueryPrecise");
+    if (f.pipelineStatisticsQuery) features.push_back("pipelineStatisticsQuery");
+    if (f.vertexPipelineStoresAndAtomics) features.push_back("vertexPipelineStoresAndAtomics");
+    if (f.fragmentStoresAndAtomics) features.push_back("fragmentStoresAndAtomics");
+    if (f.shaderTessellationAndGeometryPointSize) features.push_back("shaderTessellationAndGeometryPointSize");
+    if (f.shaderImageGatherExtended) features.push_back("shaderImageGatherExtended");
+    if (f.shaderStorageImageExtendedFormats) features.push_back("shaderStorageImageExtendedFormats");
+    if (f.shaderStorageImageMultisample) features.push_back("shaderStorageImageMultisample");
+    if (f.shaderStorageImageReadWithoutFormat) features.push_back("shaderStorageImageReadWithoutFormat");
+    if (f.shaderStorageImageWriteWithoutFormat) features.push_back("shaderStorageImageWriteWithoutFormat");
+    if (f.shaderUniformBufferArrayDynamicIndexing) features.push_back("shaderUniformBufferArrayDynamicIndexing");
+    if (f.shaderSampledImageArrayDynamicIndexing) features.push_back("shaderSampledImageArrayDynamicIndexing");
+    if (f.shaderStorageBufferArrayDynamicIndexing) features.push_back("shaderStorageBufferArrayDynamicIndexing");
+    if (f.shaderStorageImageArrayDynamicIndexing) features.push_back("shaderStorageImageArrayDynamicIndexing");
+    if (f.shaderClipDistance) features.push_back("shaderClipDistance");
+    if (f.shaderCullDistance) features.push_back("shaderCullDistance");
+    if (f.shaderFloat64) features.push_back("shaderFloat64");
+    if (f.shaderInt64) features.push_back("shaderInt64");
+    if (f.shaderInt16) features.push_back("shaderInt16");
+    if (f.shaderResourceResidency) features.push_back("shaderResourceResidency");
+    if (f.shaderResourceMinLod) features.push_back("shaderResourceMinLod");
+    if (f.sparseBinding) features.push_back("sparseBinding");
+    if (f.sparseResidencyBuffer) features.push_back("sparseResidencyBuffer");
+    if (f.sparseResidencyImage2D) features.push_back("sparseResidencyImage2D");
+    if (f.sparseResidencyImage3D) features.push_back("sparseResidencyImage3D");
+    if (f.sparseResidency2Samples) features.push_back("sparseResidency2Samples");
+    if (f.sparseResidency4Samples) features.push_back("sparseResidency4Samples");
+    if (f.sparseResidency8Samples) features.push_back("sparseResidency8Samples");
+    if (f.sparseResidency16Samples) features.push_back("sparseResidency16Samples");
+    if (f.sparseResidencyAliased) features.push_back("sparseResidencyAliased");
+    if (f.variableMultisampleRate) features.push_back("variableMultisampleRate");
+    if (f.inheritedQueries) features.push_back("inheritedQueries");
+
+    json << "],\"availableFeatures\":[";
+    for (size_t index = 0; index < features.size(); ++index) {
+        if (index != 0) json << ',';
+        json << "\""
+             << features[index]
+             << "\"";
+    }
+    json << "]"
+         << ",\"memoryHeapCount\":" << g_runtime.memoryProperties.memoryHeapCount
+         << ",\"memoryTypeCount\":" << g_runtime.memoryProperties.memoryTypeCount
+         << ",\"deviceLocalHeapBytes\":" << g_runtime.deviceLocalHeapBytes
+         << ",\"hostVisibleMemoryTypeCount\":" << g_runtime.hostVisibleMemoryTypeCount
+         << ",\"maxImageDimension2D\":" << g_runtime.properties.limits.maxImageDimension2D
+         << ",\"maxBoundDescriptorSets\":" << g_runtime.properties.limits.maxBoundDescriptorSets
+         << ",\"maxPushConstantsSize\":" << g_runtime.properties.limits.maxPushConstantsSize
+         << ",\"timestampComputeAndGraphics\":"
+         << (g_runtime.properties.limits.timestampComputeAndGraphics ? "true" : "false")
          << ",\"reused\":" << (reused ? "true" : "false")
          << ",\"detail\":\"Host VkDevice and graphics queue are initialized and retained. "
+            "Physical-device features, extension names, limits, and memory properties were queried. "
+            "Advertised extensions/features were not enabled by this bootstrap. "
             "No game surface, swapchain, Wine renderer, or guest ICD is created.\"}";
     return json.str();
 }
@@ -155,6 +260,44 @@ std::string initializeHostDevice() {
             candidate.graphicsQueueFamily = familyIndex;
             candidate.queueCount = family.queueCount;
             vkGetPhysicalDeviceProperties(physicalDevice, &candidate.properties);
+            vkGetPhysicalDeviceMemoryProperties(physicalDevice, &candidate.memoryProperties);
+            vkGetPhysicalDeviceFeatures(physicalDevice, &candidate.availableFeatures);
+
+            for (uint32_t typeIndex = 0;
+                 typeIndex < candidate.memoryProperties.memoryTypeCount; ++typeIndex) {
+                if ((candidate.memoryProperties.memoryTypes[typeIndex].propertyFlags
+                        & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) != 0) {
+                    ++candidate.hostVisibleMemoryTypeCount;
+                }
+            }
+            for (uint32_t heapIndex = 0;
+                 heapIndex < candidate.memoryProperties.memoryHeapCount; ++heapIndex) {
+                const VkMemoryHeap &heap = candidate.memoryProperties.memoryHeaps[heapIndex];
+                if ((heap.flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) != 0) {
+                    candidate.deviceLocalHeapBytes += static_cast<uint64_t>(heap.size);
+                }
+            }
+
+            uint32_t extensionCount = 0;
+            VkResult extensionResult = vkEnumerateDeviceExtensionProperties(
+                    physicalDevice, nullptr, &extensionCount, nullptr);
+            if (extensionResult == VK_SUCCESS) {
+                std::vector<VkExtensionProperties> extensions(extensionCount);
+                if (extensionCount == 0) {
+                    candidate.extensionsEnumerated = true;
+                } else {
+                    extensionResult = vkEnumerateDeviceExtensionProperties(
+                            physicalDevice, nullptr, &extensionCount, extensions.data());
+                    if (extensionResult == VK_SUCCESS) {
+                        extensions.resize(extensionCount);
+                        candidate.deviceExtensions.reserve(extensionCount);
+                        for (const VkExtensionProperties &extension : extensions) {
+                            candidate.deviceExtensions.emplace_back(extension.extensionName);
+                        }
+                        candidate.extensionsEnumerated = true;
+                    }
+                }
+            }
             foundGraphicsQueue = true;
             break;
         }
