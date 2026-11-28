@@ -13,7 +13,7 @@ required_branches=(
   "feature/maliforge-gx-stage20-storage"
   "feature/maliforge-gx-stage21-game-advisor"
   "feature/maliforge-gx-stage22-ci"
-  "feature/maliforge-gx-stage23-release",
+  "feature/maliforge-gx-stage23-release"
   "feature/maliforge-gx-game-rendering-backend"
 )
 
