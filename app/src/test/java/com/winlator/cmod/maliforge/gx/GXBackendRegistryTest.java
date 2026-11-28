@@ -9,6 +9,9 @@ public class GXBackendRegistryTest {
         GXBackendRegistry registry = GXBackendRegistry.createDefault();
         GXBackendDescriptor nativeBackend = registry.get(GXBackendRegistry.MALIFORGE_NATIVE);
         assertNotNull(nativeBackend);
+        assertEquals("maliforge_gx", nativeBackend.getId());
+        assertEquals("MaliForge GX", nativeBackend.getDisplayName());
+        assertNull(registry.get(GXBackendRegistry.LEGACY_MALIFORGE_NATIVE));
         assertFalse(nativeBackend.isSelectable());
         assertFalse(nativeBackend.hasRuntimeInitializer());
         assertEquals(GXBackendDescriptor.Kind.NATIVE_RENDERER, nativeBackend.getKind());
