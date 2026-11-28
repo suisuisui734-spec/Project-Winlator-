@@ -425,6 +425,7 @@ public class SettingsFragment extends Fragment {
             });
         }
 
+        final CheckBox cbLeanMode = view.findViewById(R.id.CBLeanMode);
         final CheckBox cbGameModeSignal = view.findViewById(R.id.CBGameModeSignal);
         final CheckBox cbThreadPriorityBoost = view.findViewById(R.id.CBThreadPriorityBoost);
         final CheckBox cbPreferBigCores = view.findViewById(R.id.CBPreferBigCores);
@@ -434,6 +435,7 @@ public class SettingsFragment extends Fragment {
         final CheckBox cbSamsungBoost = view.findViewById(R.id.CBSamsungBoost);
         final View llSamsungBoost = view.findViewById(R.id.LLSamsungBoost);
 
+        if (cbLeanMode != null) cbLeanMode.setChecked(preferences.getBoolean(com.winlator.cmod.perf.PerformanceManager.PREF_LEAN_MODE, false));
         if (cbGameModeSignal != null) cbGameModeSignal.setChecked(preferences.getBoolean(com.winlator.cmod.perf.PerformanceManager.PREF_GAME_MODE_SIGNAL, true));
         if (cbThreadPriorityBoost != null) cbThreadPriorityBoost.setChecked(preferences.getBoolean(com.winlator.cmod.perf.PerformanceManager.PREF_THREAD_PRIORITY_BOOST, true));
         if (cbPreferBigCores != null) cbPreferBigCores.setChecked(preferences.getBoolean(com.winlator.cmod.perf.PerformanceManager.PREF_PREFER_BIG_CORES, false));
@@ -469,6 +471,7 @@ public class SettingsFragment extends Fragment {
             editor.putBoolean("share_android_clipboard", cbShareClipboard.isChecked());
             editor.putBoolean("show_adrenotools_unsupported", cbShowAdrenoTools.isChecked());
 
+            if (cbLeanMode != null) editor.putBoolean(com.winlator.cmod.perf.PerformanceManager.PREF_LEAN_MODE, cbLeanMode.isChecked());
             if (cbGameModeSignal != null) editor.putBoolean(com.winlator.cmod.perf.PerformanceManager.PREF_GAME_MODE_SIGNAL, cbGameModeSignal.isChecked());
             if (cbThreadPriorityBoost != null) editor.putBoolean(com.winlator.cmod.perf.PerformanceManager.PREF_THREAD_PRIORITY_BOOST, cbThreadPriorityBoost.isChecked());
             if (cbPreferBigCores != null) editor.putBoolean(com.winlator.cmod.perf.PerformanceManager.PREF_PREFER_BIG_CORES, cbPreferBigCores.isChecked());

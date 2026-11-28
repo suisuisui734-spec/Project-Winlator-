@@ -648,6 +648,24 @@
                             android:textColor="?android:attr/textColorSecondary" />
                     </LinearLayout>
 
+                    <!-- Winlator Lean Mode: disables optional app-managed performance hooks. -->
+                    <CheckBox
+                        android:id="@+id/CBLeanMode"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Winlator Lean Mode"
+                        android:textStyle="bold"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Skips guest thread-priority scans, optional big-core affinity scans, sustained-performance requests and OEM boost hooks. Wine, Box64/FEX, graphics drivers, Vulkan, audio, input and Android thermal protection remain available. Android Game Mode signaling remains controlled separately."
+                        android:textSize="11sp"
+                        android:textColor="?android:attr/textColorSecondary"
+                        android:layout_marginStart="32dp"
+                        android:layout_marginBottom="12dp" />
+
                     <!-- System Performance Enhancements -->
                     <TextView
                         android:id="@+id/TVPerformanceHeader"

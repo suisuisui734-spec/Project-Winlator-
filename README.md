@@ -26,6 +26,14 @@ The app is adopting a distinct navy, cyan, and amber visual identity. Launcher i
 
 ## Features and status
 
+### Winlator Lean Mode (initial implementation)
+
+A user-selectable setting is available at **Settings → Performance → Winlator Lean Mode**. It is off by default to preserve existing behavior.
+
+When enabled for a game session, it bypasses optional guest thread-priority/process scans, optional big-core affinity scans, Android sustained-performance requests, and OEM-specific boost hooks managed by the app. Android Game Mode signaling remains independently configurable. The mode does not remove or disable Wine, Box64/FEX, graphics drivers, Vulkan, audio, input, container management, or Android thermal safeguards.
+
+This is an initial, focused implementation. It reduces work performed by Winlator's optional performance-management path; it is **not** a claim of higher FPS, lower measured RAM, or lower device temperature. Those outcomes require repeatable testing on physical devices.
+
 ### App
 - Android ARM64 source project based on Winlator Mali (Bionic Edition).
 - Project Winlator branding and refreshed navigation.
